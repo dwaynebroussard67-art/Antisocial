@@ -1,0 +1,74 @@
+/*
+  ANTISOCIAL — design tokens
+  Carried over from the original Misfit build (verified against the live
+  Misfit Ministries screenshot: near-black bg, serif display headline,
+  red as a rare/sacred accent, tight-tracked all-caps labels).
+  Do not introduce a second unrelated palette — extend this one.
+*/
+
+:root {
+  /* Base */
+  --bg: #0A0908;              /* near-black, warm undertone */
+  --surface-1: #14100F;
+  --surface-2: #1E1815;
+  --border: rgba(255, 255, 255, 0.07);
+
+  /* Text */
+  --text-primary: #F2EDE4;
+  --text-secondary: #A79E93;
+
+  /* Accents — gold primary, silver secondary, red RARE and sacred */
+  --accent-gold: #D4AF37;
+  --accent-gold-hover: #E4C158;
+  --accent-silver: #C7CBD1;
+  --accent-silver-hover: #DBDEE2;
+
+  /* Danger / alert red — matches the live site's "First Responders" button.
+     Never decorative. Reserved for: 911 prompt, alert states, Pit ledger. */
+  --danger: #7A1F1F;
+  --danger-hover: #8F2626;
+  --danger-text: #E8B4B4;
+
+  --success: #4C7A3C;
+
+  /* Tier accent hairlines — subtle, used only for the thin underline/tab
+     that marks which tier a person is standing in. Never a full theme swap. */
+  --tier-street: #6B6259;   /* dust / dim */
+  --tier-block: #8A9A6E;    /* muted olive, "closer to home" */
+  --tier-crib: #B8863E;     /* warm amber, between gold and rust */
+  --tier-pit: #7A1F1F;      /* same as danger — the Pit and the alert system share a register */
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+
+  --motion-fast: 150ms;
+  --motion-slow: 220ms;
+
+  --font-body: "Inter", sans-serif;
+  --font-display: "Space Grotesk", serif; /* live site uses a serif display face —
+                                              swap this for the actual licensed
+                                              serif family when handed off */
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+.label {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.hairline {
+  height: 2px;
+  width: 48px;
+  background: var(--danger);
+  border: none;
+}
