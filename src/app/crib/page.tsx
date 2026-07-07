@@ -3,6 +3,7 @@ import { requireCribAccess, AccessDeniedError } from "@/lib/auth/roles";
 import { NavBar } from "@/components/NavBar";
 import { NuraPresence } from "@/components/NuraPresence";
 import Image from "next/image";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,9 @@ export default async function CribPage() {
       </section>
 
       <section style={{ padding: "0 2rem 3rem", display: "grid", gap: "1.5rem", maxWidth: "720px" }}>
-        <Card title="The best games" body="Built for this tier specifically. Some of them we made ourselves." />
+        <Link href="/block/arcade" style={{ textDecoration: "none", color: "inherit" }}>
+          <Card title="The best games" body="Same Arcade as the Block for now — Crib-exclusive games are still on the roadmap." />
+        </Link>
         <Card title="Leadership on the Workshop" body="Lead projects, not just join them." />
         <Card title="Direct accountability" body="Small circles. Real names. Real follow-through." />
       </section>

@@ -3,6 +3,7 @@ import { requireBlockAccess, AccessDeniedError } from "@/lib/auth/roles";
 import { NavBar } from "@/components/NavBar";
 import { NuraPresence } from "@/components/NuraPresence";
 import Image from "next/image";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +59,9 @@ export default async function BlockPage() {
       </section>
 
       <section style={{ padding: "0 2rem 3rem", display: "grid", gap: "1.5rem", maxWidth: "720px" }}>
-        <Card title="Better games" body="Beyond chess and checkers — head-to-head matches, ranked play." />
+        <Link href="/block/arcade" style={{ textDecoration: "none", color: "inherit" }}>
+          <Card title="Better games" body="Daily trivia, word scramble, reaction timer, coin flip streak — head-to-head matches and ranked play are next." />
+        </Link>
         <Card title="The Workshop" body="Real volunteer projects. Join one, lead one, build something with your hands alongside people who show up." />
         <Card title="Mission Board" body="See what the community actually needs right now, and what you can offer." />
       </section>
