@@ -18,6 +18,11 @@ export const members = pgTable("members", {
   email: text("email").unique(),
   emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
 
+  // Supabase auth user id (auth.users.id) — the link between a Misfit
+  // Ministries login and this member row. Nullable because anonymous
+  // Street members exist before (or without) ever signing in.
+  authUserId: text("auth_user_id").unique(),
+
   displayName: text("display_name"),
 
   // Anonymous street-tier visitors still need a stable identity to hang
