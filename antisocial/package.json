@@ -1,0 +1,32 @@
+{
+  "name": "antisocial",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "apply-schema": "node apply-schema.mjs",
+    "seed": "tsx scripts/seed.ts"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.110.1",
+    "drizzle-orm": "^0.31.0",
+    "next": "^14.2.0",
+    "postgres": "^3.4.4",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.0",
+    "@types/react": "^18.3.0",
+    "drizzle-kit": "^0.22.0",
+    "tsx": "^4.15.0",
+    "typescript": "^5.4.0"
+  }
+}
