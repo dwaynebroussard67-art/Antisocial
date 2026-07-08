@@ -51,10 +51,21 @@ export async function computeAndApplyTier(memberId: string): Promise<MemberTier>
     nextTier = "block";
   }
 
+  // BUGFIX (this session): this was update-only, so if a member somehow
+  // reached this point with no memberRoles row yet, the WHERE matched
+  // zero rows and the write silently no-op'd — the function would still
+  // return `nextTier` as if it had been persisted. Every current call
+  // site happens to create the role row first (session.ts's
+  // ensureRoleRow, anonymous-identity.ts), so this wasn't reachable today,
+  // but it's a silent-failure trap for the next call site that forgets
+  // to. Upsert instead, so it's correct on its own.
   await db
-    .update(memberRoles)
-    .set({ tier: nextTier, updatedAt: new Date() })
-    .where(eq(memberRoles.memberId, memberId));
+    .insert(memberRoles)
+    .values({ memberId, tier: nextTier })
+    .onConflictDoUpdate({
+      target: memberRoles.memberId,
+      set: { tier: nextTier, updatedAt: new Date() },
+    });
 
   return nextTier;
 }

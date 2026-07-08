@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireCribAccess, AccessDeniedError } from "@/lib/auth/roles";
 import { NavBar } from "@/components/NavBar";
+import { getViewer } from "@/lib/auth/session";
 import { NuraPresence } from "@/components/NuraPresence";
 import Image from "next/image";
 import Link from "next/link";
@@ -16,9 +17,11 @@ export default async function CribPage() {
     throw err;
   }
 
+  const viewer = await getViewer();
+
   return (
     <main>
-      <NavBar viewerTier={tier} />
+      <NavBar viewerTier={tier} viewer={viewer} />
 
       <section style={{ position: "relative", height: "40vh" }}>
         <Image

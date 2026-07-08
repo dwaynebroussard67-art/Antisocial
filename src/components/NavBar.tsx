@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { MemberTier } from "@/lib/auth/roles";
+import type { Viewer } from "@/lib/auth/session";
 
 const TIER_LABEL: Record<MemberTier, string> = {
   street: "Street",
@@ -12,11 +13,22 @@ const TIER_LABEL: Record<MemberTier, string> = {
  * Access is cascading, so the nav only shows links the viewer's tier can
  * actually reach — a Block member never sees a "Crib" link that would just
  * 403 on them. Order is fixed: Street, Block, Crib, Pit.
+ *
+ * `viewer` is optional so existing call sites don't break, but every page
+ * should pass it now that auth is real (HANDOFF-22 §4.5) — it's what
+ * drives the Sign in / Sign out link and the Arcade link at Block+.
  */
 const TIER_ORDER: MemberTier[] = ["street", "block", "crib", "pit"];
 
-export function NavBar({ viewerTier }: { viewerTier: MemberTier }) {
+export function NavBar({
+  viewerTier,
+  viewer,
+}: {
+  viewerTier: MemberTier;
+  viewer?: Viewer | null;
+}) {
   const viewerRank = TIER_ORDER.indexOf(viewerTier);
+  const canArcade = viewerRank >= TIER_ORDER.indexOf("block") && viewerTier !== "pit";
 
   return (
     <nav
@@ -64,6 +76,44 @@ export function NavBar({ viewerTier }: { viewerTier: MemberTier }) {
             </Link>
           );
         })}
+
+        {canArcade && (
+          <Link
+            href="/block/arcade"
+            className="label"
+            style={{ color: "var(--text-primary)", textDecoration: "none" }}
+          >
+            Arcade
+          </Link>
+        )}
+
+        {viewer ? (
+          <form action="/api/auth/signout" method="post">
+            <button
+              type="submit"
+              className="label"
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--text-secondary)",
+                cursor: "pointer",
+                padding: 0,
+                font: "inherit",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Sign out
+            </button>
+          </form>
+        ) : (
+          <Link
+            href="/sign-in"
+            className="label"
+            style={{ color: "var(--text-secondary)", textDecoration: "none" }}
+          >
+            Sign in
+          </Link>
+        )}
       </div>
     </nav>
   );

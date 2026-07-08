@@ -14,34 +14,46 @@ const COOKIE_NAME = "antisocial_anon_id";
  * game history, still gets loved on by Nura the same way.
  *
  * Call this on first load of any Antisocial page BEFORE checking tier.
+ *
+ * BUGFIX (this session): this function used to call `cookieStore.set(...)`
+ * directly, but it's called from `AntisocialGate` — an async Server
+ * Component (src/app/page.tsx). Next.js only allows writing cookies from
+ * a Server Action or Route Handler, so that `.set()` call threw "Cookies
+ * can only be modified in a Server Action or Route Handler" on every
+ * brand-new visitor's first page load — the homepage crashed for anyone
+ * without the cookie already set. The device-id cookie is now assigned by
+ * src/middleware.ts (which runs before this, and is allowed to write
+ * cookies) — by the time this function runs, the cookie is guaranteed to
+ * already be on the request. This function now only reads it and creates
+ * the matching DB row; it never writes the cookie itself.
  */
 export async function ensureAnonymousMember(): Promise<string> {
   const cookieStore = await cookies();
-  const existing = cookieStore.get(COOKIE_NAME)?.value;
+  const deviceId = cookieStore.get(COOKIE_NAME)?.value;
 
-  if (existing) {
-    const [row] = await db
-      .select({ id: members.id })
-      .from(members)
-      .where(eq(members.anonymousDeviceId, existing))
-      .limit(1);
-    if (row) return row.id;
+  if (!deviceId) {
+    // Should not happen — middleware assigns this cookie on every request
+    // that reaches a page. Fail loudly instead of silently creating a
+    // member with no device id to recognize them by next time.
+    throw new Error(
+      "ensureAnonymousMember: no antisocial_anon_id cookie on the request. " +
+        "Is src/middleware.ts's matcher excluding this route?"
+    );
   }
 
-  const deviceId = crypto.randomUUID();
+  const [row] = await db
+    .select({ id: members.id })
+    .from(members)
+    .where(eq(members.anonymousDeviceId, deviceId))
+    .limit(1);
+  if (row) return row.id;
+
   const [created] = await db
     .insert(members)
     .values({ anonymousDeviceId: deviceId })
     .returning({ id: members.id });
 
   await db.insert(memberRoles).values({ memberId: created.id, tier: "street" });
-
-  cookieStore.set(COOKIE_NAME, deviceId, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 365 * 2, // 2 years — Street identity should persist
-  });
 
   return created.id;
 }

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { requirePitAccess, AccessDeniedError } from "@/lib/auth/roles";
 import { NavBar } from "@/components/NavBar";
+import { getViewer } from "@/lib/auth/session";
 import { NuraPresence } from "@/components/NuraPresence";
 import { AlertLedgerBoard } from "@/components/AlertLedgerBoard";
 import { db } from "@/lib/db";
@@ -19,6 +20,8 @@ export default async function PitPage() {
     throw err;
   }
 
+  const viewer = await getViewer();
+
   const entries = await db
     .select()
     .from(alertLedgerEntries)
@@ -27,7 +30,7 @@ export default async function PitPage() {
 
   return (
     <main>
-      <NavBar viewerTier={tier} />
+      <NavBar viewerTier={tier} viewer={viewer} />
 
       <section style={{ position: "relative", height: "42vh" }}>
         <Image
