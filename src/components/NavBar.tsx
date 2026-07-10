@@ -87,6 +87,18 @@ export function NavBar({
           </Link>
         )}
 
+        {/* Signal is for every signed-in member, all tiers — someone in the
+            Pit especially must never lose their line out. */}
+        {viewer && (
+          <Link
+            href="/signal"
+            className="label"
+            style={{ color: "var(--text-primary)", textDecoration: "none" }}
+          >
+            Signal
+          </Link>
+        )}
+
         {viewer ? (
           <form action="/api/auth/signout" method="post">
             <button

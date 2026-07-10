@@ -1,0 +1,40 @@
+/* Signal surfaces — converted from the reconstruction's Tailwind classes
+   to this project's token system (src/styles/tokens.css). */
+.shell { padding: 2rem; max-width: 720px; }
+.kicker { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.3em; color: var(--accent-silver); }
+.title { font-family: var(--font-display); font-size: 2rem; margin-top: 0.5rem; }
+.subtitle { color: var(--text-secondary); margin-top: 0.75rem; line-height: 1.6; max-width: 560px; }
+.navRow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1.25rem; }
+.navLink { border: 1px solid var(--border); background: var(--surface-1); color: var(--text-primary); border-radius: var(--radius-sm); padding: 8px 14px; font-size: 0.9rem; text-decoration: none; }
+.navLinkActive { border-color: var(--accent-gold); color: var(--accent-gold); }
+.content { margin-top: 1.5rem; display: grid; gap: 12px; }
+
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; }
+.cardLink { composes: card; display: block; text-decoration: none; color: var(--text-primary); }
+.cardLink:hover { border-color: var(--accent-gold); }
+.rowBetween { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.roomName { font-family: var(--font-display); font-size: 1.1rem; }
+.meta { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--accent-silver); }
+.dim { color: var(--text-secondary); font-size: 0.85rem; }
+.empty { color: var(--text-secondary); font-style: italic; padding: 16px; border: 1px dashed var(--border); border-radius: var(--radius-md); }
+
+.msgBody { white-space: pre-wrap; margin-top: 10px; line-height: 1.55; }
+.transcript { margin-top: 10px; padding: 10px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-secondary); font-size: 0.9rem; }
+.markRow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.markBtn { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-primary); border-radius: 999px; padding: 4px 12px; font-size: 0.75rem; cursor: pointer; }
+.markBtn:hover { border-color: var(--accent-gold); color: var(--accent-gold); }
+.markCounts { margin-top: 8px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent-silver); }
+
+.composer { composes: card; display: grid; gap: 10px; }
+.kindRow { display: flex; flex-wrap: wrap; gap: 6px; }
+.kindBtn { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-primary); border-radius: 999px; padding: 4px 12px; font-size: 0.78rem; cursor: pointer; }
+.kindBtnActive { background: var(--accent-gold); color: #14100f; border-color: var(--accent-gold); }
+.textarea { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); min-height: 90px; padding: 10px 12px; font-size: 0.95rem; resize: vertical; width: 100%; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.select { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); padding: 6px 10px; }
+.checkbox { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); font-size: 0.85rem; }
+.sendBtn { margin-left: auto; background: var(--accent-gold); color: #14100f; border: none; border-radius: var(--radius-sm); padding: 8px 18px; font-weight: 600; cursor: pointer; }
+.sendBtn:disabled { opacity: 0.6; cursor: default; }
+.error { color: var(--danger-text); font-size: 0.85rem; }
+.actionBtn { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-primary); border-radius: var(--radius-sm); padding: 6px 14px; font-size: 0.85rem; cursor: pointer; }
+.actionBtn:hover { border-color: var(--accent-gold); color: var(--accent-gold); }

@@ -5,6 +5,9 @@ import { getViewer } from "@/lib/auth/session";
 import { TriviaWidget } from "@/components/arcade/trivia-widget";
 import { ArcadeLeaderboardWidget } from "@/components/arcade/leaderboard-widget";
 import { WarGame } from "@/components/arcade/war-game";
+import { WordScrambleGame } from "@/components/arcade/word-scramble-game";
+import { ReactionTimerGame } from "@/components/arcade/reaction-timer-game";
+import { CoinFlipGame } from "@/components/arcade/coin-flip-game";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +79,29 @@ export default async function ArcadePage() {
           </p>
         )}
       </section>
+
+      {/* Solo score games — playable UI added in HANDOFF-25. Each one is
+          gated exactly like War: the submit routes require a signed-in
+          Block viewer, so showing the game to a signed-out visitor would
+          just be a broken toy. */}
+      {[
+        { name: "Word Scramble", node: <WordScrambleGame /> },
+        { name: "Reaction Timer", node: <ReactionTimerGame /> },
+        { name: "Coin Flip Streak", node: <CoinFlipGame /> },
+      ].map((g) => (
+        <section key={g.name} style={{ padding: "0 2rem 3rem", maxWidth: "720px" }}>
+          <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.3rem", marginBottom: "1rem" }}>
+            {g.name}
+          </h2>
+          {viewer ? (
+            g.node
+          ) : (
+            <p style={{ color: "var(--text-secondary)" }}>
+              <a href="/sign-in" style={{ color: "var(--accent-gold)" }}>Sign in</a> to play.
+            </p>
+          )}
+        </section>
+      ))}
 
       <section style={{ padding: "0 2rem 3rem", maxWidth: "720px", display: "grid", gap: "2rem" }}>
         <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.3rem", margin: 0 }}>

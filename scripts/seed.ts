@@ -8,10 +8,12 @@
 // simpler and correct.
 import { seedBadges } from "../src/lib/badges/seed-badges";
 import { seedArcadeGames } from "../src/lib/arcade/seed-games";
+import { seedEthiopianTrivia } from "../src/lib/arcade/trivia/ethiopian-questions";
 
 async function main() {
   await seedBadges();
   await seedArcadeGames();
+  await seedEthiopianTrivia();
 }
 
 main()
