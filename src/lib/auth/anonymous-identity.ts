@@ -27,7 +27,15 @@ const COOKIE_NAME = "antisocial_anon_id";
  * already be on the request. This function now only reads it and creates
  * the matching DB row; it never writes the cookie itself.
  */
-export async function ensureAnonymousMember(): Promise<string> {
+/**
+ * SIGN-OUT GHOST FIX (HANDOFF-32): the row matched by device id may have
+ * been UPGRADED to a real account (session.ts case 3 links auth onto the
+ * anonymous row so Street history survives sign-up). After sign-out the
+ * cookie still points at that upgraded row — which reads as e.g. Block
+ * tier with no session behind it. Callers need to know, so this now
+ * returns { id, authLinked }.
+ */
+export async function ensureAnonymousMember(): Promise<{ id: string; authLinked: boolean }> {
   const cookieStore = await cookies();
   const deviceId = cookieStore.get(COOKIE_NAME)?.value;
 
@@ -42,11 +50,11 @@ export async function ensureAnonymousMember(): Promise<string> {
   }
 
   const [row] = await db
-    .select({ id: members.id })
+    .select({ id: members.id, authUserId: members.authUserId })
     .from(members)
     .where(eq(members.anonymousDeviceId, deviceId))
     .limit(1);
-  if (row) return row.id;
+  if (row) return { id: row.id, authLinked: row.authUserId !== null };
 
   const [created] = await db
     .insert(members)
@@ -55,5 +63,5 @@ export async function ensureAnonymousMember(): Promise<string> {
 
   await db.insert(memberRoles).values({ memberId: created.id, tier: "street" });
 
-  return created.id;
+  return { id: created.id, authLinked: false };
 }

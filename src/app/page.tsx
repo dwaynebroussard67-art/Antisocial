@@ -1,5 +1,6 @@
 import { ensureAnonymousMember } from "@/lib/auth/anonymous-identity";
 import { getMemberTier } from "@/lib/auth/roles";
+import { getViewer } from "@/lib/auth/session";
 import { NuraPresence } from "@/components/NuraPresence";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,12 +9,29 @@ import Link from "next/link";
  * This is the "Antisocial" gate. Two ways in, per your spec:
  *  - a direct/shared link lands here
  *  - the button on Misfit Ministries also lands here
- * Both paths go through the same anonymous-identity + tier check, so
- * behavior is identical regardless of entry point.
+ *
+ * IDENTITY ORDER (HANDOFF-32): real auth session first, anonymous cookie
+ * second. The gate used to resolve by cookie alone — signed-in members
+ * got the right page only because their cookie happened to point at
+ * their own upgraded row, and signed-OUT members with a stale cookie got
+ * a "Continue to the Block" button the Block itself would refuse. Now:
+ *  - session present  -> that member, that tier, Continue.
+ *  - no session, cookie points at an auth-linked (upgraded) row -> ghost:
+ *    treated as Street, with a welcome-back sign-in as the lead action.
+ *  - no session, clean anonymous row -> Street, as always.
  */
 export default async function AntisocialGate() {
-  const memberId = await ensureAnonymousMember();
-  const tier = await getMemberTier(memberId);
+  const viewer = await getViewer();
+  let tier: string;
+  let ghost = false; // signed-out, but this device once held an account
+
+  if (viewer) {
+    tier = await getMemberTier(viewer.id);
+  } else {
+    const anon = await ensureAnonymousMember();
+    ghost = anon.authLinked;
+    tier = ghost ? "street" : await getMemberTier(anon.id);
+  }
 
   return (
     <main style={{ minHeight: "100vh", position: "relative" }}>
@@ -64,36 +82,71 @@ export default async function AntisocialGate() {
         {tier === "street" ? (
           <>
             <p style={{ color: "var(--text-secondary)" }}>
-              You're in as Street — no email, no questions asked. Look around.
-              You can go deeper whenever you're ready, not before.
+              {ghost
+                ? "You're signed out. Your account — and everything you built — is right behind the door."
+                : "You're in as Street — no email, no questions asked. Look around. You can go deeper whenever you're ready, not before."}
             </p>
-            <Link
-              href="/street"
-              style={{
-                background: "var(--accent-gold)",
-                color: "#14100F",
-                padding: "0.9rem 1.4rem",
-                borderRadius: "var(--radius-md)",
-                textAlign: "center",
-                textDecoration: "none",
-                fontWeight: 600,
-              }}
-            >
-              Enter Street
-            </Link>
-            <Link
-              href="/sign-in"
-              style={{
-                border: "1px solid var(--accent-silver)",
-                color: "var(--accent-silver)",
-                padding: "0.9rem 1.4rem",
-                borderRadius: "var(--radius-md)",
-                textAlign: "center",
-                textDecoration: "none",
-              }}
-            >
-              Sign in — get closer to the Block
-            </Link>
+            {ghost ? (
+              <>
+                <Link
+                  href="/sign-in"
+                  style={{
+                    background: "var(--accent-gold)",
+                    color: "#14100F",
+                    padding: "0.9rem 1.4rem",
+                    borderRadius: "var(--radius-md)",
+                    textAlign: "center",
+                    textDecoration: "none",
+                    fontWeight: 600,
+                  }}
+                >
+                  Sign back in
+                </Link>
+                <Link
+                  href="/street"
+                  style={{
+                    border: "1px solid var(--accent-silver)",
+                    color: "var(--accent-silver)",
+                    padding: "0.9rem 1.4rem",
+                    borderRadius: "var(--radius-md)",
+                    textAlign: "center",
+                    textDecoration: "none",
+                  }}
+                >
+                  Just walk the Street
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/street"
+                  style={{
+                    background: "var(--accent-gold)",
+                    color: "#14100F",
+                    padding: "0.9rem 1.4rem",
+                    borderRadius: "var(--radius-md)",
+                    textAlign: "center",
+                    textDecoration: "none",
+                    fontWeight: 600,
+                  }}
+                >
+                  Enter Street
+                </Link>
+                <Link
+                  href="/sign-in"
+                  style={{
+                    border: "1px solid var(--accent-silver)",
+                    color: "var(--accent-silver)",
+                    padding: "0.9rem 1.4rem",
+                    borderRadius: "var(--radius-md)",
+                    textAlign: "center",
+                    textDecoration: "none",
+                  }}
+                >
+                  Sign in — get closer to the Block
+                </Link>
+              </>
+            )}
           </>
         ) : (
           <Link
