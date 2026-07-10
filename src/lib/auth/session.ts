@@ -31,6 +31,9 @@ const ANON_COOKIE = "antisocial_anon_id";
 export type Viewer = {
   id: string;
   email: string | null;
+  // Surfaced for the nav + account page (HANDOFF-31). Null until the
+  // member sets one on /account; pickers and walls prefer it over email.
+  displayName: string | null;
 };
 
 export async function getViewer(): Promise<Viewer | null> {
@@ -43,7 +46,7 @@ export async function getViewer(): Promise<Viewer | null> {
 
   // 1. Already linked.
   const [linked] = await db
-    .select({ id: members.id, email: members.email })
+    .select({ id: members.id, email: members.email, displayName: members.displayName })
     .from(members)
     .where(eq(members.authUserId, user.id))
     .limit(1);
@@ -56,7 +59,7 @@ export async function getViewer(): Promise<Viewer | null> {
   // Ministries side or seeded) — attach the auth identity to it.
   if (email) {
     const [byEmail] = await db
-      .select({ id: members.id })
+      .select({ id: members.id, displayName: members.displayName })
       .from(members)
       .where(eq(members.email, email))
       .limit(1);
@@ -67,7 +70,7 @@ export async function getViewer(): Promise<Viewer | null> {
         .where(eq(members.id, byEmail.id));
       await ensureRoleRow(byEmail.id);
       await computeAndApplyTier(byEmail.id);
-      return { id: byEmail.id, email };
+      return { id: byEmail.id, email, displayName: byEmail.displayName };
     }
   }
 
@@ -77,7 +80,7 @@ export async function getViewer(): Promise<Viewer | null> {
   const anonId = cookieStore.get(ANON_COOKIE)?.value;
   if (anonId) {
     const [anonRow] = await db
-      .select({ id: members.id })
+      .select({ id: members.id, displayName: members.displayName })
       .from(members)
       .where(eq(members.anonymousDeviceId, anonId))
       .limit(1);
@@ -88,7 +91,7 @@ export async function getViewer(): Promise<Viewer | null> {
         .where(eq(members.id, anonRow.id));
       await ensureRoleRow(anonRow.id);
       await computeAndApplyTier(anonRow.id);
-      return { id: anonRow.id, email };
+      return { id: anonRow.id, email, displayName: anonRow.displayName };
     }
   }
 
@@ -99,7 +102,7 @@ export async function getViewer(): Promise<Viewer | null> {
     .returning({ id: members.id });
   await ensureRoleRow(created.id);
   await computeAndApplyTier(created.id);
-  return { id: created.id, email };
+  return { id: created.id, email, displayName: null };
 }
 
 async function ensureRoleRow(memberId: string) {

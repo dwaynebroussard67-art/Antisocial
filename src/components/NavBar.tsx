@@ -99,6 +99,18 @@ export function NavBar({
           </Link>
         )}
 
+        {/* Who am I signed in as? Display name if set, else email prefix.
+            Tapping it opens /account (HANDOFF-31). */}
+        {viewer && (
+          <Link
+            href="/account"
+            className="label"
+            style={{ color: "var(--accent-gold)", textDecoration: "none", maxWidth: "9rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+          >
+            {viewer.displayName ?? viewer.email?.split("@")[0] ?? "Account"}
+          </Link>
+        )}
+
         {viewer ? (
           <form action="/api/auth/signout" method="post">
             <button
