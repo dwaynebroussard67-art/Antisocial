@@ -181,6 +181,40 @@ export async function createFrontPorchRequest(input: {
   prompt: string;
   payload?: Record<string, unknown>;
 }) {
+  // RE-KNOCK POLICY (HANDOFF-29 open item, decided here to match the
+  // words already on the door): the reject button says "Not now" — not
+  // "never" — so a rejected knock may be knocked again, which resets the
+  // old row to pending (the unique(from,to,type) index means there is
+  // exactly one row to reset). Two protective exceptions:
+  //   - muted: the receiver said do-not-contact. The knocker gets the
+  //     same response shape as success (no signal that they're muted —
+  //     telling them invites escalation), but the row stays muted and
+  //     the receiver never sees a new pending request.
+  //   - pending/accepted: idempotent, return the existing row.
+  const [existing] = await db
+    .select()
+    .from(signalRequests)
+    .where(
+      and(
+        eq(signalRequests.fromMemberId, input.viewer.memberId),
+        eq(signalRequests.toMemberId, input.toMemberId),
+        eq(signalRequests.type, "front-porch"),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    if (existing.status === "rejected") {
+      const [reopened] = await db
+        .update(signalRequests)
+        .set({ status: "pending", prompt: input.prompt, payload: input.payload ?? {}, createdAt: new Date(), resolvedAt: null })
+        .where(eq(signalRequests.id, existing.id))
+        .returning();
+      return reopened;
+    }
+    return existing; // pending, accepted, muted, redirected: no new knock
+  }
+
   const [request] = await db
     .insert(signalRequests)
     .values({

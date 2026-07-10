@@ -36,5 +36,17 @@
 .sendBtn { margin-left: auto; background: var(--accent-gold); color: #14100f; border: none; border-radius: var(--radius-sm); padding: 8px 18px; font-weight: 600; cursor: pointer; }
 .sendBtn:disabled { opacity: 0.6; cursor: default; }
 .error { color: var(--danger-text); font-size: 0.85rem; }
+
+.label { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 14px; }
+.input { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); padding: 8px 12px; font-size: 0.95rem; width: 100%; }
+.newLink { display: inline-block; color: var(--accent-gold); font-size: 0.9rem; margin-bottom: 14px; text-decoration: none; }
+.newLink:hover { text-decoration: underline; }
+.chipRow { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 4px 6px 4px 12px; font-size: 0.85rem; color: var(--text-primary); }
+.chipRemove { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 1rem; line-height: 1; padding: 2px 4px; }
+.chipRemove:hover { color: var(--text-primary); }
+.pickerResults { border: 1px solid var(--border); border-radius: var(--radius-sm); margin-top: 4px; max-height: 180px; overflow-y: auto; background: var(--surface-2); }
+.pickerResult { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--text-primary); padding: 8px 12px; cursor: pointer; font-size: 0.9rem; }
+.pickerResult:hover { background: var(--surface-3, rgba(255,255,255,0.05)); }
 .actionBtn { border: 1px solid var(--border); background: var(--surface-2); color: var(--text-primary); border-radius: var(--radius-sm); padding: 6px 14px; font-size: 0.85rem; cursor: pointer; }
 .actionBtn:hover { border-color: var(--accent-gold); color: var(--accent-gold); }

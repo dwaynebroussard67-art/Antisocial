@@ -3,6 +3,7 @@ import { SignalShell } from "@/components/signal/signal-shell";
 import { RequestList } from "@/components/signal/request-list";
 import { getSignalViewer } from "@/lib/signal/viewer";
 import { listRequests } from "@/lib/signal/service";
+import styles from "@/components/signal/signal.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,7 @@ export default async function FrontPorchPage() {
       subtitle="Nobody gets a thread with you until you say so. These are the knocks."
       active="porch"
     >
+      <Link href="/signal/front-porch/new" className={styles.newLink}>+ Knock</Link>
       <RequestList
         requests={requests.map((r) => ({
           id: r.id,

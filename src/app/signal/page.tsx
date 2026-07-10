@@ -3,6 +3,7 @@ import { SignalShell } from "@/components/signal/signal-shell";
 import { RoomList } from "@/components/signal/room-list";
 import { getSignalViewer } from "@/lib/signal/viewer";
 import { listSignalBoard } from "@/lib/signal/service";
+import styles from "@/components/signal/signal.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,7 @@ export default async function SignalBoardPage() {
       subtitle="Your rooms. Every one of them exists because somebody said yes."
       active="board"
     >
+      <Link href="/signal/rooms/new" className={styles.newLink}>+ New Room</Link>
       <RoomList rooms={rooms} />
     </SignalShell>
   );
