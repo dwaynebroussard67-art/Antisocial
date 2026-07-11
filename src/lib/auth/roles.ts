@@ -47,8 +47,36 @@ export async function getMemberTier(memberId: string): Promise<MemberTier> {
  */
 export async function requireTierAccess(requiredTier: MemberTier) {
   const viewer = await getViewer(); // null is fine here — Street doesn't require sign-in
-  const tier = viewer ? await getMemberTier(viewer.id) : "street";
 
+  if (viewer) {
+    const [row] = await db
+      .select({ tier: memberRoles.tier, siteRole: memberRoles.siteRole })
+      .from(memberRoles)
+      .where(eq(memberRoles.memberId, viewer.id))
+      .limit(1);
+    const tier = row?.tier ?? "street";
+
+    // ADMIN OVERRIDE (HANDOFF-33): D runs this place — site_role admin
+    // passes every tier gate regardless of earned tier. The returned tier
+    // is lifted to the floor being entered so the NavBar renders that
+    // tier's links correctly. The earned tier in the database is NOT
+    // changed: admin is oversight, not a shortcut on the ladder. (Note
+    // requireActiveResponder still gates Narcan Watch separately — being
+    // admin does not make anyone an on-call responder.)
+    if (row?.siteRole === "admin" && TIER_RANK[tier] < TIER_RANK[requiredTier]) {
+      return { viewer, tier: requiredTier };
+    }
+
+    if (TIER_RANK[tier] < TIER_RANK[requiredTier]) {
+      throw new AccessDeniedError(
+        "insufficient_tier",
+        `${requiredTier} access required, viewer is ${tier}.`
+      );
+    }
+    return { viewer, tier };
+  }
+
+  const tier: MemberTier = "street";
   if (TIER_RANK[tier] < TIER_RANK[requiredTier]) {
     throw new AccessDeniedError(
       "insufficient_tier",
