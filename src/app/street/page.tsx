@@ -5,12 +5,12 @@ import { NuraPresence } from "@/components/NuraPresence";
 import Image from "next/image";
 
 export default async function StreetPage() {
-  const { tier } = await requireStreetAccess();
+  const { tier, isAdmin } = await requireStreetAccess();
   const viewer = await getViewer();
 
   return (
     <main>
-      <NavBar viewerTier={tier} viewer={viewer} />
+      <NavBar viewerTier={tier} viewer={viewer} isAdmin={isAdmin} />
 
       <section style={{ padding: "2rem", maxWidth: "720px" }}>
         <p className="label" style={{ color: "var(--tier-street)" }}>STREET</p>

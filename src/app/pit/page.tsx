@@ -13,8 +13,9 @@ export const dynamic = "force-dynamic";
 
 export default async function PitPage() {
   let tier;
+  let isAdmin: boolean | undefined;
   try {
-    ({ tier } = await requirePitAccess());
+    ({ tier, isAdmin } = await requirePitAccess());
   } catch (err) {
     if (err instanceof AccessDeniedError) redirect("/");
     throw err;
@@ -30,7 +31,7 @@ export default async function PitPage() {
 
   return (
     <main>
-      <NavBar viewerTier={tier} viewer={viewer} />
+      <NavBar viewerTier={tier} viewer={viewer} isAdmin={isAdmin} />
 
       <section style={{ position: "relative", height: "42vh" }}>
         <Image

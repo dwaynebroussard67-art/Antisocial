@@ -10,8 +10,9 @@ export const dynamic = "force-dynamic";
 
 export default async function BlockPage() {
   let tier;
+  let isAdmin: boolean | undefined;
   try {
-    ({ tier } = await requireBlockAccess());
+    ({ tier, isAdmin } = await requireBlockAccess());
   } catch (err) {
     if (err instanceof AccessDeniedError) redirect("/");
     throw err;
@@ -21,7 +22,7 @@ export default async function BlockPage() {
 
   return (
     <main>
-      <NavBar viewerTier={tier} viewer={viewer} />
+      <NavBar viewerTier={tier} viewer={viewer} isAdmin={isAdmin} />
 
       <section style={{ position: "relative", height: "40vh" }}>
         <Image

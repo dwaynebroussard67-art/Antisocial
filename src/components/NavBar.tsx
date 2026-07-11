@@ -17,18 +17,27 @@ const TIER_LABEL: Record<MemberTier, string> = {
  * `viewer` is optional so existing call sites don't break, but every page
  * should pass it now that auth is real (HANDOFF-22 §4.5) — it's what
  * drives the Sign in / Sign out link and the Arcade link at Block+.
+ *
+ * `isAdmin` (HANDOFF-35) is separate from `viewerTier` on purpose.
+ * `viewerTier` is only ever "the floor of the page currently rendering
+ * this," so using it alone for reachability boxed admins in on every page
+ * except /pit. `isAdmin` makes every link reachable regardless of which
+ * page happens to be open, while `viewerTier` still drives which link is
+ * highlighted as "current."
  */
 const TIER_ORDER: MemberTier[] = ["street", "block", "crib", "pit"];
 
 export function NavBar({
   viewerTier,
   viewer,
+  isAdmin = false,
 }: {
   viewerTier: MemberTier;
   viewer?: Viewer | null;
+  isAdmin?: boolean;
 }) {
   const viewerRank = TIER_ORDER.indexOf(viewerTier);
-  const canArcade = viewerRank >= TIER_ORDER.indexOf("block") && viewerTier !== "pit";
+  const canArcade = isAdmin || (viewerRank >= TIER_ORDER.indexOf("block") && viewerTier !== "pit");
 
   return (
     <nav
@@ -56,7 +65,7 @@ export function NavBar({
 
       <div style={{ display: "flex", gap: "1.25rem", alignItems: "center" }}>
         {TIER_ORDER.map((tier, i) => {
-          const reachable = i <= viewerRank;
+          const reachable = isAdmin || i <= viewerRank;
           return (
             <Link
               key={tier}

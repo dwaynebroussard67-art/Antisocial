@@ -56,15 +56,25 @@ export async function requireTierAccess(requiredTier: MemberTier) {
       .limit(1);
     const tier = row?.tier ?? "street";
 
+    const isAdmin = row?.siteRole === "admin";
+
     // ADMIN OVERRIDE (HANDOFF-33): D runs this place — site_role admin
     // passes every tier gate regardless of earned tier. The returned tier
-    // is lifted to the floor being entered so the NavBar renders that
-    // tier's links correctly. The earned tier in the database is NOT
-    // changed: admin is oversight, not a shortcut on the ladder. (Note
-    // requireActiveResponder still gates Narcan Watch separately — being
-    // admin does not make anyone an on-call responder.)
-    if (row?.siteRole === "admin" && TIER_RANK[tier] < TIER_RANK[requiredTier]) {
-      return { viewer, tier: requiredTier };
+    // is lifted to the floor being entered so the page itself renders
+    // correctly. The earned tier in the database is NOT changed: admin is
+    // oversight, not a shortcut on the ladder. (Note requireActiveResponder
+    // still gates Narcan Watch separately — being admin does not make
+    // anyone an on-call responder.)
+    //
+    // isAdmin is returned SEPARATELY from tier (HANDOFF-35 fix) because
+    // "tier" here is only ever lifted to the FLOOR of the page you're
+    // currently on — it is not "admin's true ceiling." NavBar needs the
+    // real isAdmin flag to know every door is open, regardless of which
+    // page happens to be rendering it right now. Passing the lifted
+    // per-page `tier` alone made every tier above the current page look
+    // locked in the nav (only /pit ever looked fully unlocked).
+    if (isAdmin && TIER_RANK[tier] < TIER_RANK[requiredTier]) {
+      return { viewer, tier: requiredTier, isAdmin };
     }
 
     if (TIER_RANK[tier] < TIER_RANK[requiredTier]) {
@@ -73,7 +83,7 @@ export async function requireTierAccess(requiredTier: MemberTier) {
         `${requiredTier} access required, viewer is ${tier}.`
       );
     }
-    return { viewer, tier };
+    return { viewer, tier, isAdmin };
   }
 
   const tier: MemberTier = "street";
@@ -84,7 +94,7 @@ export async function requireTierAccess(requiredTier: MemberTier) {
     );
   }
 
-  return { viewer, tier };
+  return { viewer, tier, isAdmin: false };
 }
 
 // Convenience wrappers matching the four tiers directly.
