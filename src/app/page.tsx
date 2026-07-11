@@ -89,7 +89,7 @@ export default async function AntisocialGate() {
             {ghost ? (
               <>
                 <Link
-                  href="/sign-in?mode=signin"
+                  href="/sign-in"
                   style={{
                     background: "var(--accent-gold)",
                     color: "#14100F",
@@ -133,21 +133,7 @@ export default async function AntisocialGate() {
                   Enter Street
                 </Link>
                 <Link
-                  href="/sign-in?mode=signup"
-                  style={{
-                    border: "1px solid var(--accent-gold)",
-                    color: "var(--accent-gold)",
-                    padding: "0.9rem 1.4rem",
-                    borderRadius: "var(--radius-md)",
-                    textAlign: "center",
-                    textDecoration: "none",
-                    fontWeight: 600,
-                  }}
-                >
-                  Create account — get closer to the Block
-                </Link>
-                <Link
-                  href="/sign-in?mode=signin"
+                  href="/sign-in"
                   style={{
                     border: "1px solid var(--accent-silver)",
                     color: "var(--accent-silver)",
@@ -157,7 +143,7 @@ export default async function AntisocialGate() {
                     textDecoration: "none",
                   }}
                 >
-                  Already a Misfit? Sign in
+                  Sign in — get closer to the Block
                 </Link>
               </>
             )}
