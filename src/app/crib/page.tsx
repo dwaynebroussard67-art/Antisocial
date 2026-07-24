@@ -3,6 +3,7 @@ import { requireCribAccess, AccessDeniedError } from "@/lib/auth/roles";
 import { NavBar } from "@/components/NavBar";
 import { getViewer } from "@/lib/auth/session";
 import { NuraPresence } from "@/components/NuraPresence";
+import { UpstairsPresence } from "@/components/UpstairsPresence";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -63,6 +64,11 @@ export default async function CribPage() {
           style={{ objectFit: "cover" }}
         />
       </section>
+
+      {/* One level up: the Pit. Presence only, same as every other floor —
+          "nothing sees the Pit" means nothing sees INTO it. The Crib can
+          see someone's down there; it can't call to them. */}
+      <UpstairsPresence viewerTier={tier} />
 
       <NuraPresence />
     </main>

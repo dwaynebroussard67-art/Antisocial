@@ -2,7 +2,9 @@ import { requireStreetAccess } from "@/lib/auth/roles";
 import { NavBar } from "@/components/NavBar";
 import { getViewer } from "@/lib/auth/session";
 import { NuraPresence } from "@/components/NuraPresence";
+import { UpstairsPresence } from "@/components/UpstairsPresence";
 import Image from "next/image";
+import Link from "next/link";
 
 export default async function StreetPage() {
   const { tier, isAdmin } = await requireStreetAccess();
@@ -36,10 +38,23 @@ export default async function StreetPage() {
       </section>
 
       <section style={{ padding: "0 2rem 3rem", display: "grid", gap: "1.5rem", maxWidth: "720px" }}>
-        <Card title="Games" body="Chess, checkers, the basics. Better games open up on the Block." />
+        {/* Was: "Chess, checkers, the basics. Better games open up on the
+            Block." — which advertised games the Street couldn't open and
+            framed the Street as the version of the site where you don't get
+            to play. Both fixed this session: the Street has its own arcade
+            now, and the copy points at it instead of upstairs. */}
+        <Card
+          href="/street/arcade"
+          title="Games"
+          body="Trivia, word scramble, reaction timer, coin flip. Simple versions, real boards — the same boards everybody else is on."
+        />
         <Card title="What we teach" body="A short introduction to the Ethiopian Tewahedo canon — why 81 books, not 66, and why it matters." />
         <Card title="Leaderboard" body="Every tier has one. You can challenge anyone at your level. Not above it." />
       </section>
+
+      {/* The one-level-up peek: who's on the Block right now. Presence only —
+          no names to click, no way to reach them. See lib/tiers/visibility.ts */}
+      <UpstairsPresence viewerTier={tier} />
 
       <section style={{ position: "relative", height: "44vh", margin: "0 0 2rem" }}>
         <Image
@@ -55,11 +70,26 @@ export default async function StreetPage() {
   );
 }
 
-function Card({ title, body }: { title: string; body: string }) {
-  return (
-    <div style={{ border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "1.25rem", background: "var(--surface-1)" }}>
+function Card({ title, body, href }: { title: string; body: string; href?: string }) {
+  const inner = (
+    <>
       <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.1rem", margin: 0 }}>{title}</h3>
       <p style={{ color: "var(--text-secondary)", marginTop: "0.5rem", lineHeight: 1.5 }}>{body}</p>
-    </div>
+    </>
+  );
+
+  const style = {
+    border: "1px solid var(--border)",
+    borderRadius: "var(--radius-md)",
+    padding: "1.25rem",
+    background: "var(--surface-1)",
+  } as const;
+
+  if (!href) return <div style={style}>{inner}</div>;
+
+  return (
+    <Link href={href} style={{ ...style, display: "block", textDecoration: "none", color: "inherit" }}>
+      {inner}
+    </Link>
   );
 }

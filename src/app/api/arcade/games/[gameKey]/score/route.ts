@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireBlockAccess, AccessDeniedError } from "@/lib/auth/roles";
+import { requireStreetAccess, AccessDeniedError } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { arcadeGames, arcadeScores } from "@/lib/db/schema/arcade-core";
+import { assertPlayable } from "@/lib/arcade/assert-playable";
 import { recordArcadeActivity } from "@/lib/arcade/streaks";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -19,12 +20,23 @@ const submitSchema = z.object({
 });
 
 export async function POST(req: NextRequest, { params }: { params: { gameKey: string } }) {
+  // FLOOR LOWERED to Street (D's correction, this session): the arcade is no
+  // longer Block+. Which build a member plays is decided by the variants
+  // registry, so the tier floor here is just "is there a member at all," and
+  // assertPlayable below asks the question that actually matters.
   let viewer;
+  let tier;
   try {
-    ({ viewer } = await requireBlockAccess());
+    ({ viewer, tier } = await requireStreetAccess());
     if (!viewer) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+    await assertPlayable(params.gameKey, tier, viewer.id);
   } catch (err) {
-    if (err instanceof AccessDeniedError) return NextResponse.json({ error: err.reason }, { status: 401 });
+    if (err instanceof AccessDeniedError) {
+      return NextResponse.json(
+        { error: err.reason },
+        { status: err.reason === "unauthenticated" ? 401 : 403 }
+      );
+    }
     throw err;
   }
 

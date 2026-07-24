@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireBlockAccess, AccessDeniedError } from "@/lib/auth/roles";
+import { requireStreetAccess, AccessDeniedError } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { triviaAttempts } from "@/lib/db/schema/trivia";
+import { assertPlayable } from "@/lib/arcade/assert-playable";
 import { getOrAssignTodaysQuestion } from "@/lib/arcade/trivia/daily";
 import { and, eq } from "drizzle-orm";
 
@@ -10,12 +11,21 @@ function todayIso(): string {
 }
 
 export async function GET() {
+  // Street floor + registry check (D's correction) — same gate as the
+  // submit route, so the question and the answer are reachable together.
   let viewer;
+  let tier;
   try {
-    ({ viewer } = await requireBlockAccess());
+    ({ viewer, tier } = await requireStreetAccess());
     if (!viewer) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+    await assertPlayable("trivia", tier, viewer.id);
   } catch (err) {
-    if (err instanceof AccessDeniedError) return NextResponse.json({ error: err.reason }, { status: 401 });
+    if (err instanceof AccessDeniedError) {
+      return NextResponse.json(
+        { error: err.reason },
+        { status: err.reason === "unauthenticated" ? 401 : 403 }
+      );
+    }
     throw err;
   }
 

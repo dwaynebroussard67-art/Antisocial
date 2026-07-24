@@ -3,6 +3,7 @@ import { members } from "@/lib/db/schema/members";
 import { memberRoles } from "@/lib/db/schema/member-roles";
 import { eq } from "drizzle-orm";
 import type { MemberTier } from "@/lib/auth/roles";
+import { assertPromotionAuthority } from "./promotion";
 
 /**
  * AUTO-TIER ASSIGNMENT
@@ -75,8 +76,16 @@ export async function computeAndApplyTier(memberId: string): Promise<MemberTier>
  * member's program participation — this is the "gave up their time"
  * path into the Crib you described, kept separate from any automatic
  * computation on purpose.
+ *
+ * AUTHORITY CHECK ADDED (D's correction, this session): `grantedBy` was
+ * previously taken on trust — the function recorded who did it but never
+ * checked whether they were allowed to. Promotion authority is site_role,
+ * never tier; see tiers/promotion.ts for why that distinction is load-bearing
+ * (the Pit can reach anyone and must still not be able to advance anyone).
  */
 export async function grantCribByProgramParticipation(memberId: string, grantedBy: string) {
+  await assertPromotionAuthority(grantedBy);
+
   const now = new Date();
   await db
     .update(members)

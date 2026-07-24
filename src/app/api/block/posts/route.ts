@@ -4,6 +4,7 @@ import { blockPosts } from "@/lib/db/schema/block-posts";
 import { requireBlockAccess, AccessDeniedError } from "@/lib/auth/roles";
 import { createPostSchema } from "@/lib/block/post-schema";
 import { assertPostRateLimit, RateLimitedError } from "@/lib/block/rate-limit";
+import { screenContent } from "@/lib/moderation/nura";
 import { and, desc, eq, isNull, lt } from "drizzle-orm";
 import { z } from "zod";
 
@@ -74,6 +75,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // NURA SCREENING (D's correction, this session).
+    //
+    // The post is written QUARANTINED and only promoted to published once
+    // Nura has cleared it. Inserting as published and demoting afterwards
+    // would leave a window — however short — where the feed could serve
+    // something that was about to be quarantined. There is no such window
+    // this way round.
     const [post] = await db
       .insert(blockPosts)
       .values({
@@ -82,9 +90,32 @@ export async function POST(req: NextRequest) {
         title: parsed.data.title,
         body: parsed.data.body,
         tags: parsed.data.tags,
+        status: "quarantined",
       })
       .returning();
-    return NextResponse.json({ post }, { status: 201 });
+
+    const decision = await screenContent({
+      contentType: "block_post",
+      contentId: post.id,
+      authorId: viewer.id,
+      // Title and body are screened together — a clean body under a title
+      // carrying the whole payload would otherwise walk straight through.
+      text: `${parsed.data.title}\n\n${parsed.data.body}`,
+    });
+
+    if (decision.publish) {
+      await db.update(blockPosts).set({ status: "published" }).where(eq(blockPosts.id, post.id));
+    }
+
+    // THE SENDER IS NEVER TOLD. Identical 201 either way — same shape, same
+    // status code, and `status` hard-coded to "published" rather than echoed
+    // from the row, because echoing it would hand the author the verdict in
+    // the response body. From their side the post went up normally; they
+    // simply won't find it in the feed if it was held. The silence is the
+    // requirement, not an oversight: they may have worded something badly,
+    // or Nura may have misread them, and nothing is said either way while
+    // that's being worked out.
+    return NextResponse.json({ post: { ...post, status: "published" } }, { status: 201 });
   } catch (err) {
     console.error("[block/posts:POST]", err);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });

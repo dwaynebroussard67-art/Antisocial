@@ -43,6 +43,17 @@ export const members = pgTable("members", {
   programParticipationVerifiedAt: timestamp("program_participation_verified_at", { withTimezone: true }),
   programParticipationVerifiedBy: uuid("program_participation_verified_by"),
 
+  // Adult verification. Added alongside the game-variant age gate.
+  // NULL means "not verified as an adult," which every gate treats exactly
+  // as it treats a minor. The gate FAILS CLOSED: an age-restricted build
+  // (the Crib's Trap Man — cops, cash, getaway) is withheld unless this is
+  // set. Without this column `arcade_game_variants.min_age` would be a
+  // number nothing could check — a gate that only looks like one.
+  // HOW adulthood gets verified is not decided here; a human sets it, the
+  // same pattern as program participation above.
+  adultVerifiedAt: timestamp("adult_verified_at", { withTimezone: true }),
+  adultVerifiedBy: uuid("adult_verified_by"),
+
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

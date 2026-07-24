@@ -37,7 +37,15 @@ export function NavBar({
   isAdmin?: boolean;
 }) {
   const viewerRank = TIER_ORDER.indexOf(viewerTier);
-  const canArcade = isAdmin || (viewerRank >= TIER_ORDER.indexOf("block") && viewerTier !== "pit");
+
+  // ARCADE IS NO LONGER BLOCK+ (D's correction, this session). The Street
+  // plays too — the simplest builds — so the only tier without an arcade
+  // link is the Pit, which has no games at all by doctrine (HANDOFF.md §2).
+  // Street viewers go to /street/arcade, Block and Crib to /block/arcade;
+  // each page resolves the right BUILD per viewer from the variants
+  // registry, so the two URLs are entry points, not separate game sets.
+  const canArcade = viewerTier !== "pit" || isAdmin;
+  const arcadeHref = viewerTier === "street" ? "/street/arcade" : "/block/arcade";
 
   return (
     <nav
@@ -88,7 +96,7 @@ export function NavBar({
 
         {canArcade && (
           <Link
-            href="/block/arcade"
+            href={arcadeHref}
             className="label"
             style={{ color: "var(--text-primary)", textDecoration: "none" }}
           >
