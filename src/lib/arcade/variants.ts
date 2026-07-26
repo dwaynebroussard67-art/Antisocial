@@ -5,7 +5,6 @@ import { members } from "@/lib/db/schema/members";
 import { eq } from "drizzle-orm";
 import type { MemberTier } from "@/lib/auth/roles";
 import { tierRank } from "@/lib/tiers/visibility";
-import { DEFAULT_VARIANTS } from "./variant-defaults";
 
 /**
  * WHICH BUILD OF A GAME DOES THIS MEMBER GET?
@@ -104,7 +103,7 @@ export async function resolveVariantForViewer(
   return all.find((v) => v.gameKey === gameKey) ?? null;
 }
 
-/** The shape both the DB read and the built-in fallback produce. */
+/** The shape the registry read produces. Only the database produces it. */
 type VariantRow = {
   gameKey: string;
   gameName: string;
@@ -119,16 +118,31 @@ type VariantRow = {
 };
 
 /**
- * Read the registry, falling back to the built-in defaults when the table
- * is empty or not there yet. See variant-defaults.ts for why.
+ * Read the registry. THE DATABASE IS THE ONLY SOURCE OF TRUTH.
  *
- * The database wins whenever it has anything to say — a single row means
- * the registry is live and the defaults stay out of it, so a variant that
- * an admin switched OFF is never resurrected by a default.
+ * FAILS CLOSED: no row, no game. An empty table, a missing table, or a
+ * failed query all return zero playable variants.
+ *
+ * This reverses the fallback added earlier in this branch, and the reason
+ * is worth keeping: a game reachable with no database row is a game with
+ * no age gate, by construction. `min_age` lives on the variant row. If code
+ * can serve a game without reading that row, then the age gate is not a
+ * gate — it's a suggestion that happens to be followed whenever the table
+ * is populated. For the Crib Pac-Man build (cops, cash, getaway) that is
+ * not an acceptable failure mode.
+ *
+ * The earlier fallback was solving a real problem — a deploy where the
+ * migration hadn't run showed an empty arcade — but it solved it in the
+ * one direction a child-safety surface must never fail. The correct fix
+ * for an unapplied migration is to apply the migration.
+ *
+ * DEFAULT_VARIANTS is now seed data only (scripts/seed.ts). It is
+ * deliberately NOT imported here; keeping it out of the read path is what
+ * makes "no row, no game" true by construction rather than by discipline.
  */
 async function loadVariantRows(): Promise<VariantRow[]> {
   try {
-    const rows = await db
+    return await db
       .select({
         gameKey: arcadeGameVariants.gameKey,
         gameName: arcadeGames.name,
@@ -144,44 +158,16 @@ async function loadVariantRows(): Promise<VariantRow[]> {
       .from(arcadeGameVariants)
       .innerJoin(arcadeGames, eq(arcadeGames.key, arcadeGameVariants.gameKey))
       .where(eq(arcadeGameVariants.active, true));
-
-    if (rows.length > 0) return rows;
-
-    // Table exists but is unseeded. Fall through to defaults rather than
-    // showing an empty arcade.
-    console.warn(
-      "[arcade:variants] arcade_game_variants is empty — using built-in defaults. " +
-        "Run `npx tsx scripts/seed.ts` to populate it and take control from the admin side."
-    );
   } catch (err) {
-    // Almost always "relation does not exist": migration 0002 not applied.
-    // The games worked before this table existed and must keep working.
-    console.warn(
-      "[arcade:variants] could not read arcade_game_variants — using built-in defaults. " +
-        "Apply drizzle/0002_ladder_variants_nura.sql to enable the admin toggle.",
+    // Usually "relation does not exist" — migration not applied. Deny, and
+    // say so loudly enough that it gets fixed rather than lived with.
+    console.error(
+      "[arcade:variants] could not read arcade_game_variants — DENYING ALL GAMES. " +
+        "Apply the variants migration and run `npx tsx scripts/seed.ts`.",
       err instanceof Error ? err.message : err
     );
+    return [];
   }
-
-  return defaultVariantRows();
-}
-
-function defaultVariantRows(): VariantRow[] {
-  return DEFAULT_VARIANTS.filter((v) => v.active).map((v) => ({
-    gameKey: v.gameKey,
-    // Falls back to the variant's own title. The pretty per-game name lives
-    // in arcade_games, which we deliberately don't join in this path —
-    // nothing here should need a second table to be readable.
-    gameName: v.title,
-    kind: v.kind,
-    gameActive: "true",
-    variantKey: v.variantKey,
-    title: v.title,
-    blurb: v.blurb,
-    assetBundle: null,
-    variantTier: v.tier,
-    minAge: v.minAge ?? null,
-  }));
 }
 
 async function isAdult(viewerId: string | null): Promise<boolean> {

@@ -1,31 +1,22 @@
 import type { MemberTier } from "@/lib/auth/roles";
 
 /**
- * THE CANONICAL VARIANT LIST — shared by the seeder and the resolver.
+ * SEED DATA ONLY — the canonical variant list, consumed by scripts/seed.ts.
  *
- * This exists because of a fragility in the first cut of the variants work:
- * the Street arcade and every game route were made to read
- * `arcade_game_variants` and nothing else. That meant a deploy where the
- * migration hadn't been applied, or the seed hadn't been re-run, produced a
- * Street arcade reading "Nothing's switched on right now" and four game
- * routes returning 403 — and it would have done the same to the Block's
- * games, which worked fine before and now depended on a table that might
- * be empty.
+ * IMPORTANT: this list is NOT a fallback and must never be imported into a
+ * read path. An earlier commit on this branch used it as one, so that an
+ * arcade with an unseeded table still showed games. That was reversed: a
+ * game reachable with no database row is a game with no age gate, because
+ * `min_age` lives on the row. Serving a game without reading its row makes
+ * the age gate conditional on the table happening to be populated.
  *
- * Turning a hardcoded list into a data-driven one is right. Making the
- * feature dead until someone remembers to run a script is not. So:
+ * The resolver (variants.ts) reads the database and only the database, and
+ * returns nothing when it is empty. This file's only job is to put the
+ * right rows in that database in the first place.
  *
- *   - If `arcade_game_variants` has rows, the DATABASE WINS, entirely.
- *     That preserves the point of the table — activation is a data change
- *     and an admin toggle, not a deploy.
- *   - If the table is empty or doesn't exist yet, these defaults are used.
- *     A fresh deploy works out of the box; the seed becomes an upgrade
- *     path rather than a prerequisite.
- *
- * The fallback is all-or-nothing on purpose. Merging per-game would mean a
- * variant deliberately switched OFF in the database could be resurrected by
- * a default, which is exactly the kind of surprise an admin toggle must
- * never produce.
+ * Everything new ships `active: false`. Activation is a deliberate admin
+ * act after server-side `min_age` enforcement is verified against real
+ * Postgres — never a side effect of a deploy or a seed run.
  */
 
 export type VariantDefinition = {
