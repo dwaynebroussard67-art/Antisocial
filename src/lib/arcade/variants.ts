@@ -5,6 +5,7 @@ import { members } from "@/lib/db/schema/members";
 import { eq } from "drizzle-orm";
 import type { MemberTier } from "@/lib/auth/roles";
 import { tierRank } from "@/lib/tiers/visibility";
+import { DEFAULT_VARIANTS } from "./variant-defaults";
 
 /**
  * WHICH BUILD OF A GAME DOES THIS MEMBER GET?
@@ -48,23 +49,7 @@ export async function getPlayableVariants(
   viewerId: string | null
 ): Promise<ResolvedVariant[]> {
   const isVerifiedAdult = await isAdult(viewerId);
-
-  const rows = await db
-    .select({
-      gameKey: arcadeGameVariants.gameKey,
-      gameName: arcadeGames.name,
-      kind: arcadeGames.kind,
-      gameActive: arcadeGames.active,
-      variantKey: arcadeGameVariants.variantKey,
-      title: arcadeGameVariants.title,
-      blurb: arcadeGameVariants.blurb,
-      assetBundle: arcadeGameVariants.assetBundle,
-      variantTier: arcadeGameVariants.tier,
-      minAge: arcadeGameVariants.minAge,
-    })
-    .from(arcadeGameVariants)
-    .innerJoin(arcadeGames, eq(arcadeGames.key, arcadeGameVariants.gameKey))
-    .where(eq(arcadeGameVariants.active, true));
+  const rows = await loadVariantRows();
 
   const viewerRank = tierRank(viewerTier);
   const bestPerGame = new Map<string, (typeof rows)[number]>();
@@ -117,6 +102,86 @@ export async function resolveVariantForViewer(
 ): Promise<ResolvedVariant | null> {
   const all = await getPlayableVariants(viewerTier, viewerId);
   return all.find((v) => v.gameKey === gameKey) ?? null;
+}
+
+/** The shape both the DB read and the built-in fallback produce. */
+type VariantRow = {
+  gameKey: string;
+  gameName: string;
+  kind: "solo_score" | "head_to_head" | "multiplayer";
+  gameActive: string;
+  variantKey: string;
+  title: string;
+  blurb: string | null;
+  assetBundle: string | null;
+  variantTier: MemberTier;
+  minAge: number | null;
+};
+
+/**
+ * Read the registry, falling back to the built-in defaults when the table
+ * is empty or not there yet. See variant-defaults.ts for why.
+ *
+ * The database wins whenever it has anything to say — a single row means
+ * the registry is live and the defaults stay out of it, so a variant that
+ * an admin switched OFF is never resurrected by a default.
+ */
+async function loadVariantRows(): Promise<VariantRow[]> {
+  try {
+    const rows = await db
+      .select({
+        gameKey: arcadeGameVariants.gameKey,
+        gameName: arcadeGames.name,
+        kind: arcadeGames.kind,
+        gameActive: arcadeGames.active,
+        variantKey: arcadeGameVariants.variantKey,
+        title: arcadeGameVariants.title,
+        blurb: arcadeGameVariants.blurb,
+        assetBundle: arcadeGameVariants.assetBundle,
+        variantTier: arcadeGameVariants.tier,
+        minAge: arcadeGameVariants.minAge,
+      })
+      .from(arcadeGameVariants)
+      .innerJoin(arcadeGames, eq(arcadeGames.key, arcadeGameVariants.gameKey))
+      .where(eq(arcadeGameVariants.active, true));
+
+    if (rows.length > 0) return rows;
+
+    // Table exists but is unseeded. Fall through to defaults rather than
+    // showing an empty arcade.
+    console.warn(
+      "[arcade:variants] arcade_game_variants is empty — using built-in defaults. " +
+        "Run `npx tsx scripts/seed.ts` to populate it and take control from the admin side."
+    );
+  } catch (err) {
+    // Almost always "relation does not exist": migration 0002 not applied.
+    // The games worked before this table existed and must keep working.
+    console.warn(
+      "[arcade:variants] could not read arcade_game_variants — using built-in defaults. " +
+        "Apply drizzle/0002_ladder_variants_nura.sql to enable the admin toggle.",
+      err instanceof Error ? err.message : err
+    );
+  }
+
+  return defaultVariantRows();
+}
+
+function defaultVariantRows(): VariantRow[] {
+  return DEFAULT_VARIANTS.filter((v) => v.active).map((v) => ({
+    gameKey: v.gameKey,
+    // Falls back to the variant's own title. The pretty per-game name lives
+    // in arcade_games, which we deliberately don't join in this path —
+    // nothing here should need a second table to be readable.
+    gameName: v.title,
+    kind: v.kind,
+    gameActive: "true",
+    variantKey: v.variantKey,
+    title: v.title,
+    blurb: v.blurb,
+    assetBundle: null,
+    variantTier: v.tier,
+    minAge: v.minAge ?? null,
+  }));
 }
 
 async function isAdult(viewerId: string | null): Promise<boolean> {
