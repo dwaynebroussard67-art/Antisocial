@@ -60,7 +60,19 @@ export default async function StreetPage() {
             body="Trivia, word scramble, reaction timer, coin flip. Simple versions, real boards — the same boards everybody else is on."
           />
         )}
-        <Card title="What we teach" body="A short introduction to the Ethiopian Tewahedo canon — why 81 books, not 66, and why it matters." />
+        {/* This card was decoration for months — a promise of teaching with
+            nothing behind it, the same failure the Games card had. It now
+            points at the Ethiopian Orthodox Tewahedo Church's own canon
+            list rather than at a page of ours restating it: on the question
+            of what the 81 books ARE, the church's own word is the source,
+            and anything we wrote would be a paraphrase standing in front of
+            it. Our own teaching pages, when they're written, go alongside
+            this — not instead of it. */}
+        <Card
+          href="https://www.ethiopianorthodox.org/english/canonical/books.html"
+          title="What we teach"
+          body="The Ethiopian Orthodox Tewahedo canon, from the church itself — all 81 books, 46 Old Testament and 35 New. Enoch, Jubilees, the Meqabyan. The ones most Bibles leave out."
+        />
         <Card title="Leaderboard" body="Every tier has one. You can challenge anyone at your level. Not above it." />
       </section>
 
@@ -99,8 +111,30 @@ function Card({ title, body, href }: { title: string; body: string; href?: strin
 
   if (!href) return <div style={style}>{inner}</div>;
 
+  const linkStyle = { ...style, display: "block", textDecoration: "none", color: "inherit" };
+
+  // External links leave the site, so they get a plain anchor rather than
+  // next/link (which is for client-side routing and does nothing useful for
+  // an off-site URL). rel="noopener noreferrer" is not optional: without
+  // noopener the opened page gets a handle on this window via window.opener
+  // and can navigate it somewhere else.
+  if (/^https?:\/\//.test(href)) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" style={linkStyle}>
+        {inner}
+        <span
+          aria-hidden
+          style={{ color: "var(--text-secondary)", fontSize: "0.8rem", marginTop: "0.6rem", display: "inline-block" }}
+        >
+          ethiopianorthodox.org ↗
+        </span>
+        <span className="sr-only"> (opens the Ethiopian Orthodox Tewahedo Church website in a new tab)</span>
+      </a>
+    );
+  }
+
   return (
-    <Link href={href} style={{ ...style, display: "block", textDecoration: "none", color: "inherit" }}>
+    <Link href={href} style={linkStyle}>
       {inner}
     </Link>
   );
