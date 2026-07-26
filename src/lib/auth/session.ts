@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { members } from "@/lib/db/schema/members";
 import { memberRoles } from "@/lib/db/schema/member-roles";
 import { computeAndApplyTier } from "@/lib/tiers/assign-tier";
+import { isBanned } from "@/lib/moderation/nura";
 import { eq } from "drizzle-orm";
 
 /**
@@ -36,7 +37,31 @@ export type Viewer = {
   displayName: string | null;
 };
 
+/**
+ * BAN ENFORCEMENT (D's correction, this session).
+ *
+ * A Band A verdict removes the person from the site — "the person is kicked
+ * off the site with no questions asked, no warnings." This is where that
+ * becomes true rather than just recorded: a banned member resolves to no
+ * viewer at all, so every tier gate, every route and every page treats them
+ * as a signed-out stranger.
+ *
+ * It sits in the wrapper rather than inside resolveViewer so it covers all
+ * four resolution paths (linked, by-email, anonymous-upgrade, brand-new)
+ * with one check instead of four that could drift apart. It also means a
+ * banned person who makes a NEW account is caught the moment that account
+ * links to an existing banned member row.
+ *
+ * No message, no explanation, no appeal link — by design.
+ */
 export async function getViewer(): Promise<Viewer | null> {
+  const viewer = await resolveViewer();
+  if (!viewer) return null;
+  if (await isBanned(viewer.id)) return null;
+  return viewer;
+}
+
+async function resolveViewer(): Promise<Viewer | null> {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

@@ -85,6 +85,10 @@ export const signalMessages = pgTable(
       enum: ["keep", "fade", "seal", "burn"] as const,
     }).notNull().default("keep"),
     witnessMode: boolean("witness_mode").notNull().default(false),
+    // Nura's hold (see lib/moderation/nura.ts). Set = quarantined, served to
+    // nobody, including its own sender. A timestamp rather than a boolean so
+    // the record shows WHEN it was held.
+    quarantinedAt: timestamp("quarantined_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

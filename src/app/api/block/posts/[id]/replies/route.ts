@@ -4,6 +4,7 @@ import { createReplySchema } from "@/lib/block/post-schema";
 import { assertReplyRateLimit, RateLimitedError } from "@/lib/block/rate-limit";
 import { db } from "@/lib/db";
 import { blockPosts, blockPostReplies } from "@/lib/db/schema/block-posts";
+import { screenContent } from "@/lib/moderation/nura";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 
 /**
@@ -21,7 +22,15 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const rows = await db
     .select()
     .from(blockPostReplies)
-    .where(and(eq(blockPostReplies.postId, params.id), isNull(blockPostReplies.deletedAt)))
+    .where(
+      and(
+        eq(blockPostReplies.postId, params.id),
+        isNull(blockPostReplies.deletedAt),
+        // Quarantined replies are not served to anybody, including the
+        // person who wrote them (see lib/moderation/nura.ts).
+        eq(blockPostReplies.status, "published")
+      )
+    )
     .orderBy(asc(blockPostReplies.createdAt));
   return NextResponse.json({ replies: rows });
 }
@@ -57,14 +66,36 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const [post] = await db.select({ id: blockPosts.id }).from(blockPosts).where(eq(blockPosts.id, params.id)).limit(1);
   if (!post) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  const [reply] = await db.transaction(async (tx) => {
-    const [r] = await tx
-      .insert(blockPostReplies)
-      .values({ postId: params.id, authorId: viewer.id, body: parsed.data.body })
-      .returning();
-    await tx.update(blockPosts).set({ replyCount: sql`${blockPosts.replyCount} + 1` }).where(eq(blockPosts.id, params.id));
-    return [r];
+  // Written quarantined, promoted only if Nura clears it — same order as
+  // block posts, for the same reason: no window where a held reply is
+  // briefly visible. replyCount is NOT incremented here; a quarantined
+  // reply must not bump a counter the whole feed can see, which would leak
+  // that something was posted and then vanished.
+  const [reply] = await db
+    .insert(blockPostReplies)
+    .values({ postId: params.id, authorId: viewer.id, body: parsed.data.body, status: "quarantined" })
+    .returning();
+
+  const decision = await screenContent({
+    contentType: "block_reply",
+    contentId: reply.id,
+    authorId: viewer.id,
+    text: parsed.data.body,
   });
 
-  return NextResponse.json({ reply }, { status: 201 });
+  if (decision.publish) {
+    await db.transaction(async (tx) => {
+      await tx
+        .update(blockPostReplies)
+        .set({ status: "published" })
+        .where(eq(blockPostReplies.id, reply.id));
+      await tx
+        .update(blockPosts)
+        .set({ replyCount: sql`${blockPosts.replyCount} + 1` })
+        .where(eq(blockPosts.id, params.id));
+    });
+  }
+
+  // Same silence as block posts: identical 201, status hard-coded, no tell.
+  return NextResponse.json({ reply: { ...reply, status: "published" } }, { status: 201 });
 }

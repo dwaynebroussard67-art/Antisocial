@@ -19,10 +19,15 @@ import { members } from "./members";
  * though access to it IS gated at Block tier via requireBlockAccess.
  */
 
+// "quarantined" added this session for Nura's hold (see lib/moderation/nura.ts).
+// Distinct from "flagged" on purpose: flagged is a human report against
+// content that is still visible; quarantined is Nura pulling it out of sight
+// before anybody reads it. Only "published" is ever served.
 export const blockPostStatusEnum = pgEnum("block_post_status", [
   "published",
   "flagged",
   "removed",
+  "quarantined",
 ]);
 
 export const blockPosts = pgTable(
@@ -60,6 +65,10 @@ export const blockPostReplies = pgTable(
       .notNull()
       .references(() => members.id, { onDelete: "cascade" }),
     body: text("body").notNull(),
+    // Replies had no status column at all — they were visible or soft-deleted,
+    // nothing in between. Nura needs a third state that is neither, so replies
+    // now carry the same status enum as posts. Reads filter on it.
+    status: blockPostStatusEnum("status").notNull().default("published"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),
   },

@@ -9,6 +9,7 @@ import {
   signalRooms,
 } from "@/lib/db/schema/signal";
 import { canAccessFloor, canCreateRoom, canSendInRoom, canUseVisibility, canUseWitnessMode } from "./permissions";
+import { screenContent } from "@/lib/moderation/nura";
 import type { CheckInKind, RoomType, MessageKind, Tier, VisibilityMode } from "./types";
 
 /**
@@ -107,6 +108,8 @@ export async function getRoom(viewer: Viewer, roomId: string) {
       and(
         eq(signalMessages.roomId, roomId),
         isNull(signalMessages.deletedAt),
+        // Nura's hold — served to nobody in the room, the sender included.
+        isNull(signalMessages.quarantinedAt),
         or(isNull(signalMessages.expiresAt), gt(signalMessages.expiresAt, now)),
       ),
     )
@@ -154,6 +157,9 @@ export async function sendSignalMessage(input: {
     throw new Error("Witness mode not allowed");
   }
 
+  // Written HELD, released only once Nura clears it — same order as block
+  // posts, so there is no window where a message that's about to be
+  // quarantined is briefly readable in the room.
   const [message] = await db
     .insert(signalMessages)
     .values({
@@ -166,13 +172,48 @@ export async function sendSignalMessage(input: {
       transcript: input.transcript ?? null,
       visibility,
       witnessMode: input.witnessMode ?? false,
+      quarantinedAt: new Date(),
       expiresAt: input.expiresAt ?? null,
       metadata: input.metadata ?? {},
     })
     .returning();
 
-  await db.update(signalRooms).set({ updatedAt: new Date() }).where(eq(signalRooms.id, input.roomId));
-  return message;
+  // NURA SCREENING (D's correction, this session). Signal is private, which
+  // is precisely why it's screened: a private room is where someone goes to
+  // say the thing they already know they can't say in the open.
+  //
+  // Only text is readable. Voice with a transcript is screened on the
+  // transcript; voice WITHOUT one has nothing to read and is let through
+  // rather than held forever by a classifier that cannot hear it. That is a
+  // real gap, named here rather than papered over — it closes when
+  // transcription is always-on, not before.
+  const screenable = [input.body, input.transcript].filter(Boolean).join("\n").trim();
+
+  let cleared = true;
+  if (screenable) {
+    const decision = await screenContent({
+      contentType: "signal_message",
+      contentId: message.id,
+      authorId: input.viewer.memberId,
+      text: screenable,
+    });
+    cleared = decision.publish;
+  }
+
+  if (cleared) {
+    await db
+      .update(signalMessages)
+      .set({ quarantinedAt: null })
+      .where(eq(signalMessages.id, message.id));
+    await db.update(signalRooms).set({ updatedAt: new Date() }).where(eq(signalRooms.id, input.roomId));
+  }
+
+  // THE SENDER IS NEVER TOLD: the message comes back either way, with
+  // quarantinedAt blanked so no caller can read a verdict off it. The room
+  // simply won't render it. The room's updatedAt is deliberately NOT bumped
+  // for a held message — a room jumping to the top of everyone's list with
+  // no new message visible in it would announce the hold.
+  return { ...message, quarantinedAt: null };
 }
 
 export async function createFrontPorchRequest(input: {

@@ -3,6 +3,7 @@ import { requireBlockAccess, AccessDeniedError } from "@/lib/auth/roles";
 import { NavBar } from "@/components/NavBar";
 import { getViewer } from "@/lib/auth/session";
 import { NuraPresence } from "@/components/NuraPresence";
+import { UpstairsPresence } from "@/components/UpstairsPresence";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -69,6 +70,10 @@ export default async function BlockPage() {
         <Card title="The Workshop" body="Real volunteer projects. Join one, lead one, build something with your hands alongside people who show up." />
         <Card title="Mission Board" body="See what the community actually needs right now, and what you can offer." />
       </section>
+
+      {/* One level up: who's in the Crib right now. Presence only — the Block
+          can see the Crib is occupied, never see into it. */}
+      <UpstairsPresence viewerTier={tier} />
 
       <NuraPresence />
     </main>
