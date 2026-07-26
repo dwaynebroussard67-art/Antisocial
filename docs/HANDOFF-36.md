@@ -99,10 +99,39 @@ They ship **inactive** because the bundles don't exist in this repo yet — a li
 tile pointing at a missing bundle is worse than no tile. Flip `active` when the
 builds land; that's a data change, not a deploy.
 
-**What is live on the Street now:** the four solo games that already work —
-Daily Trivia, Word Scramble, Reaction Timer, Coin Flip Streak — at
-`/street/arcade`. War stays a Block game (head-to-head). The Pit still has no
-games, per HANDOFF.md §2.
+**What is live on the Street now: NOTHING — and that is deliberate.**
+
+D's instruction on review: ship the registry, the variants, `min_age` and the
+admin toggle with everything **off**. Turning the Street's games on is a
+separate deliberate act, taken only after server-side `min_age` enforcement has
+been verified against a real database. Otherwise a schema PR doubles as a
+"content is now live to minors" event, and the Crib Pac-Man build — cops, cash,
+getaway — is not something that should go live as a side effect of applying a
+migration.
+
+So the defaults ship as:
+
+| Rows | State | Why |
+|---|---|---|
+| The five games already playable at Block (four solo + War) | **active** | Not new activation. These have been live at Block since before the registry existed; describing what is already running is not turning anything on. Shipping them off would take working games away from the Block — a regression, not a safety measure. |
+| The four Street builds | **inactive** | The new surface. Off until deliberately switched on. |
+| All three Pac-Man builds | **inactive** | Bundles not ported. Trap Man additionally carries `min_age: 18`. |
+
+The Street's "Games" card is conditional on a Street variant actually being
+active, so the Street does not advertise an arcade that is switched off — that
+would be the old card's lie with a new URL. It appears on its own when a
+variant is activated; no deploy needed.
+
+To activate, once `min_age` enforcement is verified against real Postgres:
+
+```sql
+UPDATE arcade_game_variants SET active = true
+ WHERE tier = 'street' AND game_key IN
+   ('trivia','word_scramble','reaction_timer','coin_flip_streak');
+```
+
+War stays a Block game (head-to-head). The Pit still has no games, per
+HANDOFF.md §2.
 
 **Gating changed from tier-floor to registry.** The game routes now take a
 Street floor and call `assertPlayable(gameKey, tier, viewerId)`, which asks the

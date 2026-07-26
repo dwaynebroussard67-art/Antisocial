@@ -3,12 +3,16 @@ import { NavBar } from "@/components/NavBar";
 import { getViewer } from "@/lib/auth/session";
 import { NuraPresence } from "@/components/NuraPresence";
 import { UpstairsPresence } from "@/components/UpstairsPresence";
+import { getPlayableVariants } from "@/lib/arcade/variants";
 import Image from "next/image";
 import Link from "next/link";
 
 export default async function StreetPage() {
   const { tier, isAdmin } = await requireStreetAccess();
   const viewer = await getViewer();
+
+  // Drives whether the Games card appears at all — see the card below.
+  const streetGames = await getPlayableVariants(tier, viewer?.id ?? null);
 
   return (
     <main>
@@ -43,11 +47,19 @@ export default async function StreetPage() {
             framed the Street as the version of the site where you don't get
             to play. Both fixed this session: the Street has its own arcade
             now, and the copy points at it instead of upstairs. */}
-        <Card
-          href="/street/arcade"
-          title="Games"
-          body="Trivia, word scramble, reaction timer, coin flip. Simple versions, real boards — the same boards everybody else is on."
-        />
+        {/* Only shown when the Street actually HAS a game switched on. The
+            whole reason this card was rewritten is that it used to advertise
+            games the Street couldn't open; pointing it at an arcade whose
+            variants are all inactive would be the same lie with a new URL.
+            Activation is a data change, so this appears on its own the
+            moment a Street variant is switched on — no deploy needed. */}
+        {streetGames.length > 0 && (
+          <Card
+            href="/street/arcade"
+            title="Games"
+            body="Trivia, word scramble, reaction timer, coin flip. Simple versions, real boards — the same boards everybody else is on."
+          />
+        )}
         <Card title="What we teach" body="A short introduction to the Ethiopian Tewahedo canon — why 81 books, not 66, and why it matters." />
         <Card title="Leaderboard" body="Every tier has one. You can challenge anyone at your level. Not above it." />
       </section>
