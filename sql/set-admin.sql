@@ -19,8 +19,11 @@ ON CONFLICT (email) DO UPDATE SET is_ministry_staff = true;
 -- 2. It holds admin, at Pit tier.
 --    site_role is what alertStaff() checks when Nura needs a human.
 INSERT INTO member_roles (member_id, site_role, tier)
-SELECT id, 'admin', 'pit' FROM members WHERE email = 'misfitministries2026@gmail.com'
-ON CONFLICT (member_id) DO UPDATE SET site_role = 'admin', tier = 'pit';
+SELECT id, 'admin'::site_role, 'pit'::member_tier
+  FROM members
+ WHERE email = 'misfitministries2026@gmail.com'
+ON CONFLICT (member_id)
+DO UPDATE SET site_role = 'admin'::site_role, tier = 'pit'::member_tier;
 
 -- 3. No other account holds admin.
 --    This is the half that separates administrative authority from a
@@ -28,13 +31,14 @@ ON CONFLICT (member_id) DO UPDATE SET site_role = 'admin', tier = 'pit';
 --    admin rights, not someone's standing in the community. No member row
 --    is deleted (that would cascade away their posts and history).
 UPDATE member_roles
-   SET site_role = 'member'
- WHERE site_role = 'admin'
+   SET site_role = 'member'::site_role
+ WHERE site_role = 'admin'::site_role
    AND member_id <> (SELECT id FROM members WHERE email = 'misfitministries2026@gmail.com');
 
 COMMIT;
 
--- Check the result — this should return exactly one row.
+-- Check the result — this should return exactly one row:
+--   misfitministries2026@gmail.com | admin | pit
 SELECT m.email, r.site_role, r.tier
   FROM member_roles r
   JOIN members m ON m.id = r.member_id
