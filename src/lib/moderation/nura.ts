@@ -7,6 +7,7 @@ import {
   memberBans,
 } from "@/lib/db/schema/nura-moderation";
 import { notifyMember } from "@/lib/notifications/notify";
+import { sendEmail } from "@/lib/notifications/email";
 import { getClassifier } from "./nura-classifier";
 import { resolveBand, CATEGORIES, type Band, type CategoryKey } from "./nura-bands";
 import { and, eq, isNull, inArray } from "drizzle-orm";
@@ -149,22 +150,35 @@ async function alertStaff(
   score: number
 ): Promise<void> {
   const staff = await db
-    .select({ memberId: memberRoles.memberId })
+    .select({ memberId: memberRoles.memberId, email: members.email })
     .from(memberRoles)
+    .innerJoin(members, eq(members.id, memberRoles.memberId))
     .where(inArray(memberRoles.siteRole, ["admin", "moderator"]));
 
   const categoryNote = `Nura wasn't sure (${score}/100). Held and hidden pending review.`;
+  const reviewPath = `/moderation/quarantine/${quarantineId}`;
+  const appUrl = process.env.APP_BASE_URL?.replace(/\/$/, "") || "";
 
   await Promise.all(
-    staff.map((s) =>
-      notifyMember({
+    staff.map(async (s) => {
+      await notifyMember({
         memberId: s.memberId,
         type: "system",
         title: "Held for review",
         body: categoryNote,
-        linkUrl: `/moderation/quarantine/${quarantineId}`,
-      })
-    )
+        linkUrl: reviewPath,
+      });
+      // In-app notification alone assumes someone is looking at the app.
+      // Email is the pipe that actually reaches a phone off Wi-Fi with no
+      // mobile data. See docs/HANDOFF-37 §4.
+      if (s.email) {
+        await sendEmail({
+          to: s.email,
+          subject: "Nura: held for review",
+          text: `${categoryNote}\n\n${appUrl}${reviewPath}`,
+        });
+      }
+    })
   );
 
   await db.insert(nuraActions).values({

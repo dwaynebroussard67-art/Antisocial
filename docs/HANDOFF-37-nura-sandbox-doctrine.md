@@ -181,10 +181,16 @@ see gaps below: nothing in any of these repos can currently send an email.**
 
 Recorded plainly rather than implied as done, per the Iron Scribe Protocol:
 
-1. **No email sending exists anywhere in these repos.** `notifyMember()`
-   only writes an in-app notification row. D needs to pick a provider
-   (Resend recommended) or reuse the `ntfy.sh` push pattern already live in
-   misfit-store's order alerts, or both — his call, not decided here.
+1. ~~No email sending exists anywhere in these repos.~~ **Resolved.** D chose
+   Resend (email over ntfy specifically because he runs on Wi-Fi without
+   reliable mobile data — email still pushes to a phone without needing a
+   cell signal). `lib/notifications/email.ts` + `alertStaff()` in
+   `nura.ts` now email every admin/moderator on a Band B hold, not just
+   write an in-app row. Still needs: `RESEND_API_KEY` set in the real
+   deployment (see `.env.example`), and `npm run seed-admin` run against
+   the live database once `DATABASE_URL` is provisioned — until that runs,
+   `misfitministries2026@gmail.com` isn't actually an admin yet and the
+   query still finds zero staff.
 2. **Tier 1 (the local LLM) doesn't exist yet as a running service**, and
    nothing in the live sites calls out to it. Needs: a model, a serving
    setup (Ollama is the easy path), and a secure way for a public site to
