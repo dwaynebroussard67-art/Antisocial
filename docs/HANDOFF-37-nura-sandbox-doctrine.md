@@ -177,6 +177,36 @@ see gaps below: nothing in any of these repos can currently send an email.**
 
 ---
 
+## 4a. The review queue (built this session)
+
+`/moderation/quarantine` (queue, oldest first) and
+`/moderation/quarantine/[id]` (one item + Release/Uphold), gated at
+moderator, resolving through `POST /api/moderation/quarantine/[id]/resolve`.
+This is the page the alert email links to — until it existed, every alert
+pointed at a 404.
+
+**A real bug found while building it: "release" didn't release anything.**
+`resolveQuarantine()` marked the quarantine row `released` but never touched
+the underlying content, and every read filters on `status = 'published'`.
+So a human could clear a hold and the post would stay invisible forever —
+the queue was a place content went to die.
+
+Fixed by `republish()` in `nura.ts`, which undoes *all three* of the side
+effects that were suppressed to keep holds silent (HANDOFF-36):
+
+| Content type | What release now restores |
+|---|---|
+| `block_post` | `status` → `published` |
+| `block_reply` | `status` → `published` **and** the withheld `replyCount` increment |
+| `signal_message` | `quarantinedAt` → null **and** the room's `updatedAt` bump |
+
+An unknown `contentType` logs loudly rather than silently failing to
+restore. Worth remembering when a new screened surface is added: screening
+it means teaching `republish()` about it too, or its holds become
+permanent.
+
+---
+
 ## 5. What this doesn't do yet — the honest gap list
 
 Recorded plainly rather than implied as done, per the Iron Scribe Protocol:

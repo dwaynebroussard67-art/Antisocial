@@ -129,6 +129,23 @@ export async function requireActiveResponder() {
   return { viewer, tier };
 }
 
+export type SiteRole = "member" | "moderator" | "admin";
+
+/**
+ * The viewer's actual site role. Separate from requireSiteRole (which gates
+ * and throws) because a page can need the real value AFTER passing a gate —
+ * e.g. the moderation queue is open to moderators, but the nav must not
+ * claim a moderator is an admin.
+ */
+export async function getSiteRole(memberId: string): Promise<SiteRole> {
+  const [row] = await db
+    .select({ siteRole: memberRoles.siteRole })
+    .from(memberRoles)
+    .where(eq(memberRoles.memberId, memberId))
+    .limit(1);
+  return row?.siteRole ?? "member";
+}
+
 export async function requireSiteRole(minRole: "moderator" | "admin") {
   const viewer = await getViewer();
   if (!viewer) throw new AccessDeniedError("unauthenticated", "Sign in required.");
