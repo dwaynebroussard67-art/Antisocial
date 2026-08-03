@@ -7,9 +7,12 @@ import {
   memberBans,
 } from "@/lib/db/schema/nura-moderation";
 import { notifyMember } from "@/lib/notifications/notify";
+import { sendEmail } from "@/lib/notifications/email";
 import { getClassifier } from "./nura-classifier";
 import { resolveBand, CATEGORIES, type Band, type CategoryKey } from "./nura-bands";
-import { and, eq, isNull, inArray } from "drizzle-orm";
+import { blockPosts, blockPostReplies } from "@/lib/db/schema/block-posts";
+import { signalMessages, signalRooms } from "@/lib/db/schema/signal";
+import { and, eq, isNull, inArray, sql } from "drizzle-orm";
 
 /**
  * NURA'S ENFORCEMENT PATH.
@@ -149,22 +152,35 @@ async function alertStaff(
   score: number
 ): Promise<void> {
   const staff = await db
-    .select({ memberId: memberRoles.memberId })
+    .select({ memberId: memberRoles.memberId, email: members.email })
     .from(memberRoles)
+    .innerJoin(members, eq(members.id, memberRoles.memberId))
     .where(inArray(memberRoles.siteRole, ["admin", "moderator"]));
 
   const categoryNote = `Nura wasn't sure (${score}/100). Held and hidden pending review.`;
+  const reviewPath = `/moderation/quarantine/${quarantineId}`;
+  const appUrl = process.env.APP_BASE_URL?.replace(/\/$/, "") || "";
 
   await Promise.all(
-    staff.map((s) =>
-      notifyMember({
+    staff.map(async (s) => {
+      await notifyMember({
         memberId: s.memberId,
         type: "system",
         title: "Held for review",
         body: categoryNote,
-        linkUrl: `/moderation/quarantine/${quarantineId}`,
-      })
-    )
+        linkUrl: reviewPath,
+      });
+      // In-app notification alone assumes someone is looking at the app.
+      // Email is the pipe that actually reaches a phone off Wi-Fi with no
+      // mobile data. See docs/HANDOFF-37 §4.
+      if (s.email) {
+        await sendEmail({
+          to: s.email,
+          subject: "Nura: held for review",
+          text: `${categoryNote}\n\n${appUrl}${reviewPath}`,
+        });
+      }
+    })
   );
 
   await db.insert(nuraActions).values({
@@ -256,6 +272,67 @@ export async function isBanned(memberId: string): Promise<boolean> {
 }
 
 /**
+ * Put released content back where it belongs.
+ *
+ * Every quarantine path has a side effect that had to be suppressed to keep
+ * the hold silent (see HANDOFF-36): a post is written `quarantined` rather
+ * than published, a reply doesn't increment `replyCount`, a Signal message
+ * doesn't bump its room's `updatedAt`. Releasing has to undo ALL of them,
+ * not just the status — otherwise "release" marks the quarantine row
+ * resolved while the content stays invisible forever, and the review queue
+ * quietly becomes a place where content goes to die.
+ */
+async function republish(contentType: string, contentId: string): Promise<void> {
+  if (contentType === "block_post") {
+    await db.update(blockPosts).set({ status: "published" }).where(eq(blockPosts.id, contentId));
+    return;
+  }
+
+  if (contentType === "block_reply") {
+    const [reply] = await db
+      .update(blockPostReplies)
+      .set({ status: "published" })
+      .where(eq(blockPostReplies.id, contentId))
+      .returning({ postId: blockPostReplies.postId });
+
+    // The counter was held back at screening time; catch it up now, or the
+    // reply renders under a post claiming one fewer reply than it has.
+    if (reply) {
+      await db
+        .update(blockPosts)
+        .set({ replyCount: sql`${blockPosts.replyCount} + 1` })
+        .where(eq(blockPosts.id, reply.postId));
+    }
+    return;
+  }
+
+  if (contentType === "signal_message") {
+    const [message] = await db
+      .update(signalMessages)
+      .set({ quarantinedAt: null })
+      .where(eq(signalMessages.id, contentId))
+      .returning({ roomId: signalMessages.roomId });
+
+    // Deliberately suppressed at screening time so the room didn't jump to
+    // the top of everyone's list with nothing visible in it. Now there IS
+    // something to see, so the room should surface normally.
+    if (message) {
+      await db
+        .update(signalRooms)
+        .set({ updatedAt: new Date() })
+        .where(eq(signalRooms.id, message.roomId));
+    }
+    return;
+  }
+
+  // A content type nobody taught this function about. Loud, because the
+  // silent version is a released item that never comes back.
+  console.error(
+    `[nura:republish] unknown contentType "${contentType}" (id ${contentId}) — content NOT restored`
+  );
+}
+
+/**
  * Staff resolution of a Band B hold. Human only — there is no automatic
  * release path anywhere in this file, deliberately.
  *
@@ -286,6 +363,10 @@ export async function resolveQuarantine(params: {
       reviewNotes: params.notes ?? null,
     })
     .where(eq(contentQuarantine.id, params.quarantineId));
+
+  if (params.decision === "release") {
+    await republish(row.contentType, row.contentId);
+  }
 
   await db.insert(nuraActions).values({
     actionKind: params.decision === "release" ? "human_release" : "human_uphold",
@@ -319,6 +400,36 @@ export async function reverseBan(params: {
     actorMemberId: params.reversedBy,
     detail: { notes: params.notes ?? null },
   });
+}
+
+/**
+ * One held item, for the review page. Returns everything a human needs to
+ * make the call and nothing they don't.
+ */
+export async function getQuarantine(quarantineId: string) {
+  const [row] = await db
+    .select({
+      id: contentQuarantine.id,
+      contentType: contentQuarantine.contentType,
+      capturedBody: contentQuarantine.capturedBody,
+      verdict: contentQuarantine.verdict,
+      score: contentQuarantine.score,
+      categories: contentQuarantine.categories,
+      rationale: contentQuarantine.rationale,
+      status: contentQuarantine.status,
+      createdAt: contentQuarantine.createdAt,
+      reviewedAt: contentQuarantine.reviewedAt,
+      reviewNotes: contentQuarantine.reviewNotes,
+      authorId: contentQuarantine.authorId,
+      authorName: members.displayName,
+      authorEmail: members.email,
+    })
+    .from(contentQuarantine)
+    .innerJoin(members, eq(members.id, contentQuarantine.authorId))
+    .where(eq(contentQuarantine.id, quarantineId))
+    .limit(1);
+
+  return row ?? null;
 }
 
 // Referenced by the staff queue UI when it lands; exported now so the

@@ -51,6 +51,20 @@ export const memberRoles = pgTable("member_roles", {
   cribGrantedAt: timestamp("crib_granted_at", { withTimezone: true }),
   cribGrantedBy: uuid("crib_granted_by").references(() => members.id),
 
+  // MINOR RESPONDER SCOPE — dormant in V1 (migration 0003).
+  //
+  // D's ruling: a minor who volunteers to stand between someone and the
+  // worst night of their life has likely already seen too much, and
+  // treating them as a child insults them. The policy doesn't argue with
+  // that. It ships dormant because all six safeguards around it need a
+  // SECOND adult to exist, and today there is one.
+  //
+  // A database constraint blocks pitMinorScope from being set without
+  // guardianConsentAt on file, and consent lapses after 90 days —
+  // one-time consent becomes fiction within a month.
+  pitMinorScope: boolean("pit_minor_scope").notNull().default(false),
+  guardianConsentAt: timestamp("guardian_consent_at", { withTimezone: true }),
+
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

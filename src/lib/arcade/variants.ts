@@ -1,8 +1,8 @@
 import { db } from "@/lib/db";
 import { arcadeGames } from "@/lib/db/schema/arcade-core";
 import { arcadeGameVariants } from "@/lib/db/schema/arcade-variants";
-import { members } from "@/lib/db/schema/members";
 import { eq } from "drizzle-orm";
+import { isVerifiedAdult } from "@/lib/auth/age";
 import type { MemberTier } from "@/lib/auth/roles";
 import { tierRank } from "@/lib/tiers/visibility";
 
@@ -173,13 +173,9 @@ async function loadVariantRows(): Promise<VariantRow[]> {
 async function isAdult(viewerId: string | null): Promise<boolean> {
   if (!viewerId) return false; // anonymous Street visitor — treated as a minor.
 
-  const [row] = await db
-    .select({ adultVerifiedAt: members.adultVerifiedAt })
-    .from(members)
-    .where(eq(members.id, viewerId))
-    .limit(1);
-
-  // No row, or a row with no verification timestamp, both mean "not a
-  // verified adult." Only an explicit timestamp opens the gate.
-  return Boolean(row?.adultVerifiedAt);
+  // Delegates to the one age predicate (lib/auth/age.ts, backed by
+  // migration 0003). This used to read members.adult_verified_at directly;
+  // that column is deprecated, and two independent age checks would have
+  // drifted the moment one of them was updated.
+  return isVerifiedAdult(viewerId);
 }
