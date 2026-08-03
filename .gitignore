@@ -1,0 +1,28 @@
+# Secrets — NEVER commit these.
+# This repository is PUBLIC. apply-schema.mjs reads DATABASE_URL from
+# .env.local, which means that file holds the production Postgres password.
+# Committing it publishes the database credentials to the internet.
+.env
+.env.*
+!.env.example
+
+# Build output
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Dependencies
+node_modules/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Logs
+npm-debug.log*
+yarn-error.log*
+*.log

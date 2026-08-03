@@ -10,7 +10,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "apply-schema": "node apply-schema.mjs",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "seed:responder": "tsx scripts/seed-responder.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
