@@ -219,6 +219,50 @@ has watched run, is how you remove people who did nothing.
 
 ---
 
+## 4a. Who answers the call — STANDING DIRECTIVE
+
+**D is the responder. Right now, D is the only one there is.**
+
+This is a standing answer, given by D and carried forward to every question of
+this shape without asking again: anything concerning staff, moderators,
+responders, who receives an alert, or who decides a held case resolves to **D**,
+reachable **by email**.
+
+Three things follow, and they are requirements, not suggestions.
+
+**1. D must exist in the database as admin and as an active responder.**
+`alertStaff()` selects members whose `site_role` is `admin` or `moderator`. If
+no such row exists, the alert has no recipients and the hold sits forever —
+silently, because nothing errors. Run `scripts/seed-responder.ts` (added with
+this handoff) before quiet mode comes off. It reads `RESPONDER_EMAIL` and grants
+`site_role='admin'` plus `is_misfit_first_responder=true` to that member.
+
+**2. Crisis and predation alerts must go to email, not only in-app.** An
+in-app notification requires D to be looking at the site. A crisis alert that
+waits for a page refresh is not an alert. In-app stays as the record; email is
+the delivery. Any alert of `flag IN ('crisis','predation')` sends mail to
+`RESPONDER_EMAIL` at the moment it fires.
+
+**3. Email address lives in configuration, never in the repo.** Set
+`RESPONDER_EMAIL` in the environment. Do not commit it — this repository is
+public.
+
+**Single point of failure, stated plainly and not as an objection.** With one
+responder there is no redundancy: if that inbox is missed, a crisis alert is
+missed. This is D's call and it is the honest state of a ministry this size.
+Two mitigations that cost nothing and should ship anyway:
+
+- Alerts are **queued and re-sent**, not fire-and-forget. An alert that isn't
+  acknowledged within a window re-sends rather than being lost to one failed
+  delivery.
+- `nura_log` retains every alert whether or not delivery succeeded, so an
+  unanswered alert is *findable* after the fact rather than invisible.
+
+When a second responder exists, `scripts/seed-responder.ts` takes them too —
+nothing here assumes exactly one, it only refuses to assume zero.
+
+---
+
 ## 5. Carried forward, unresolved
 
 1. **Voice with no transcript is unscreened.** Nothing to read, so it passes.
@@ -226,8 +270,9 @@ has watched run, is how you remove people who did nothing.
 2. **No staff review surface in this repo.** A ships an admin console
    (`/admin/nura`) against its sandbox schema; it needs porting alongside the
    pipeline, or Tier 1 holds accumulate with nothing to resolve them.
-3. **No admin or moderator is seeded.** An alert with nobody to receive it is
-   a hold that sits forever. Seed at least one before quiet mode comes off.
+3. ~~**No admin or moderator is seeded.**~~ **RESOLVED** — see §4a. D is the
+   responder; `scripts/seed-responder.ts` grants it. What remains is the email
+   delivery path, which is a build task, not an open question.
 4. **`min_age` still has no writer.** `members.adult_verified_at` exists and
    nothing sets it. Unrelated to Nura, still true, still blocking the Crib
    Pac-Man build.
