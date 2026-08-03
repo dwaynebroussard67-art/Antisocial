@@ -133,13 +133,35 @@ select m.email,
 -- Expected for a fresh member with nothing granted:
 --   unknown | f | f | f | block | open | f
 --
--- Expected for a verified-adult staff member:
+-- Expected after §1 ALONE (age verified, no door opened):
+--   adult   | t | f | f | block | mature | f
+--   ...and note `hints` still needs the member to have EARNED block —
+--   the ceiling permits it, the earned tier decides it.
+--
+-- Expected after §1 + ANY ONE of §2a / §2b / §2c:
 --   adult   | t | t | f | crib  | heavy | t
+--   All three open Cribs, so opens_cribs reads `t` regardless of which
+--   door was used. To see WHICH, run the audit query below — the
+--   predicate deliberately doesn't tell you, and shouldn't.
+--
+-- Expected after §1 + §3 (Pit):
+--   adult   | t | f | t | pit   | heavy | t
 
 
 -- =====================================================================
 -- WHO HOLDS WHAT — the audit query. Run it periodically.
 -- =====================================================================
+-- coalesce() on every member_roles term. This is a LEFT JOIN and a member
+-- can exist with no roles row (anonymous Street visitors do), so r.site_role
+-- is NULL for them and `NULL <> 'member'` evaluates to NULL, not false —
+-- which WHERE treats as "exclude".
+--
+-- TESTED: this changes nothing today. Both the guarded and unguarded forms
+-- return identical rows, including when the leading staff term is removed —
+-- the remaining OR terms absorb the NULL in every case constructed. The
+-- guard is here for legibility, so an operator reading this by hand can see
+-- the NULL case was considered rather than having to re-derive that it's
+-- harmless. Not a correctness fix; don't remove it thinking it was one.
 select m.email,
        m.age_status,
        m.is_ministry_staff,
@@ -150,9 +172,9 @@ select m.email,
        member_tier_ceiling(m.id) as effective_ceiling
   from members m
   left join member_roles r on r.member_id = m.id
- where m.is_ministry_staff
-    or r.site_role <> 'member'
-    or r.is_misfit_first_responder
+ where coalesce(m.is_ministry_staff, false)
+    or coalesce(r.site_role <> 'member', false)
+    or coalesce(r.is_misfit_first_responder, false)
     or r.crib_granted_at is not null
  order by m.email;
 

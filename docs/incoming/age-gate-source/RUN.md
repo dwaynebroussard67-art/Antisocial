@@ -1,5 +1,30 @@
 # Age Gate — Deploy Runbook
 
+> ## ⚠️ ARCHIVED SOURCE — DO NOT RUN STEP 2 FROM THIS FILE
+>
+> This is the original migration set as delivered, kept verbatim for
+> provenance. **It targets a schema this repo never adopted.**
+>
+> **Step 1 (the migration) was adapted** into `drizzle/0003_age_gate.sql`.
+> Run that one. It reuses the live `member_tier`, reads the live grant
+> columns, and carries existing `adult_verified_at` rows forward instead
+> of demoting verified adults to `unknown`.
+>
+> **Step 2 below is wrong for this database.** It writes `staff_role` and
+> `pit_state` (lines ~62 and ~73) — columns that do not exist here. Running
+> it produces `ERROR: column "staff_role" of relation "members" does not
+> exist`. The live equivalents are `members.is_ministry_staff`,
+> `member_roles.site_role`, `member_roles.crib_granted_at/by`, and
+> `member_roles.is_misfit_first_responder`.
+>
+> **For grants, use `sql/grants.sql`** — one canonical write per door, plus
+> an audit query showing who holds what.
+>
+> `docs/AGE_VERIFICATION_PATHS.md` in this same folder **is** accurate:
+> every path there writes `members.age_status` / `age_verified_at` /
+> `age_verified_by` / `age_method`, which is exactly what the live
+> `member_is_adult()` reads. No drift in that file.
+
 **Two steps. The second one is optional today.**
 
 ---
