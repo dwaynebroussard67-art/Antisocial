@@ -63,9 +63,22 @@ comment on column members.age_status is
     'unknown|minor|adult. unknown is treated as minor everywhere. Never infer.';
 comment on column members.age_method is
     'self_attest | guardian | staff_vouch | doc_review | payment_signal | other';
-comment on column members.adult_verified_at is
-    'DEPRECATED as of 0003. age_status is authoritative. Retained so an '
-    'in-flight deploy does not break; read member_is_adult() instead.';
+-- Guarded for the same reason as the backfill in §2 — the column is optional.
+do $$
+begin
+    if exists (
+        select 1 from information_schema.columns
+         where table_schema = current_schema()
+           and table_name   = 'members'
+           and column_name  = 'adult_verified_at'
+    ) then
+        execute $c$
+            comment on column members.adult_verified_at is
+                'DEPRECATED as of 0003. age_status is authoritative. Retained '
+                'so an in-flight deploy does not break; read member_is_adult().'
+        $c$;
+    end if;
+end $$;
 
 -- ---------------------------------------------------------------------
 -- 2. Carry existing verified adults forward.
@@ -74,13 +87,35 @@ comment on column members.adult_verified_at is
 --    already-verified adult back to unknown — locking people out of
 --    things they had legitimately been granted.
 -- ---------------------------------------------------------------------
-update members
-   set age_status      = 'adult',
-       age_verified_at = adult_verified_at,
-       age_verified_by = coalesce(adult_verified_by::text, 'migrated:0003'),
-       age_method      = 'staff_vouch'
- where adult_verified_at is not null
-   and age_status = 'unknown';
+--    GUARDED, because adult_verified_at is not guaranteed to exist. It was
+--    added by an earlier migration in this repo, but a database provisioned
+--    fresh from a later schema — or any environment that never ran that
+--    migration — has no such column, and an unguarded reference is a parse
+--    error that aborts the whole transaction. The backfill is a courtesy to
+--    existing data, not a requirement, so its absence must be a no-op rather
+--    than a failure.
+do $$
+begin
+    if exists (
+        select 1 from information_schema.columns
+         where table_schema = current_schema()
+           and table_name   = 'members'
+           and column_name  = 'adult_verified_at'
+    ) then
+        execute $mig$
+            update members
+               set age_status      = 'adult',
+                   age_verified_at = adult_verified_at,
+                   age_verified_by = coalesce(adult_verified_by::text, 'migrated:0003'),
+                   age_method      = 'staff_vouch'
+             where adult_verified_at is not null
+               and age_status = 'unknown'
+        $mig$;
+        raise notice '0003: carried existing adult_verified_at rows into age_status';
+    else
+        raise notice '0003: no adult_verified_at column — nothing to carry forward';
+    end if;
+end $$;
 
 -- ---------------------------------------------------------------------
 -- 3. Integrity: a non-unknown status must name who decided it.
