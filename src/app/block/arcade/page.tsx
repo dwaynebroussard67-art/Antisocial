@@ -26,8 +26,9 @@ const SOLO_SCORE_GAMES = [
 
 export default async function ArcadePage() {
   let tier;
+  let isAdmin: boolean | undefined;
   try {
-    ({ tier } = await requireBlockAccess());
+    ({ tier, isAdmin } = await requireBlockAccess());
   } catch (err) {
     if (err instanceof AccessDeniedError) redirect("/");
     throw err;
@@ -40,13 +41,28 @@ export default async function ArcadePage() {
   // that's correct for doctrine/content pages but wrong here, so the Arcade
   // is the one page that opts out of the normal cascade instead of relying
   // on the generic tier-floor helper.
-  if (tier === "pit") {
+  //
+  // THE `!isAdmin` IS LOAD-BEARING — do not simplify it away. NavBar computes
+  // `canArcade = viewerTier !== "pit" || isAdmin`, so it SHOWS the Arcade link
+  // to admins even at Pit tier. Without the same exception here, an admin was
+  // offered a link that bounced them straight to /pit the moment they clicked
+  // it. That is exactly what D hit: seed-admin grants the ministry account
+  // admin AND Pit tier, so the one person who runs this place was the one
+  // person the Arcade refused.
+  //
+  // Note the admin override in requireTierAccess() does NOT rescue this. It
+  // only lifts a tier that is BELOW the page's floor; "pit" already outranks
+  // "block", so nothing is lifted and `tier` stays "pit" all the way here.
+  //
+  // The nav and the page now answer the same question the same way. If the
+  // rule ever changes, change it in both or the link starts lying again.
+  if (tier === "pit" && !isAdmin) {
     redirect("/pit");
   }
 
   return (
     <main>
-      <NavBar viewerTier={tier} viewer={viewer} />
+      <NavBar viewerTier={tier} viewer={viewer} isAdmin={isAdmin} />
 
       <section style={{ padding: "2rem", maxWidth: "720px" }}>
         <p className="label" style={{ color: "var(--tier-block)" }}>ARCADE</p>
