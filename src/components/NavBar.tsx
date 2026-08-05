@@ -38,13 +38,21 @@ export function NavBar({
 }) {
   const viewerRank = TIER_ORDER.indexOf(viewerTier);
 
-  // ARCADE IS NO LONGER BLOCK+ (D's correction, this session). The Street
-  // plays too — the simplest builds — so the only tier without an arcade
-  // link is the Pit, which has no games at all by doctrine (HANDOFF.md §2).
-  // Street viewers go to /street/arcade, Block and Crib to /block/arcade;
+  // ARCADE IS OPEN TO EVERY TIER (D: "every level can see and participate
+  // down"). The Street plays the simplest builds; the Pit plays everything
+  // beneath it. "Pit: no games here at all" (HANDOFF.md §2) means the Pit
+  // has no games OF ITS OWN — no Pit-tier variants — not that Pit members
+  // are barred from the games below them.
+  //
+  // There is deliberately no `canArcade` condition any more. It previously
+  // read `viewerTier !== "pit" || isAdmin`, which hid the link from Pit
+  // members and showed it to admins — and /block/arcade then redirected
+  // admins straight back to /pit, so the one account that runs this place
+  // was offered a link that refused it.
+  //
+  // Street viewers go to /street/arcade, everyone else to /block/arcade;
   // each page resolves the right BUILD per viewer from the variants
   // registry, so the two URLs are entry points, not separate game sets.
-  const canArcade = viewerTier !== "pit" || isAdmin;
   const arcadeHref = viewerTier === "street" ? "/street/arcade" : "/block/arcade";
 
   return (
@@ -94,15 +102,13 @@ export function NavBar({
           );
         })}
 
-        {canArcade && (
-          <Link
-            href={arcadeHref}
-            className="label"
-            style={{ color: "var(--text-primary)", textDecoration: "none" }}
-          >
-            Arcade
-          </Link>
-        )}
+        <Link
+          href={arcadeHref}
+          className="label"
+          style={{ color: "var(--text-primary)", textDecoration: "none" }}
+        >
+          Arcade
+        </Link>
 
         {/* Signal is for every signed-in member, all tiers — someone in the
             Pit especially must never lose their line out. */}

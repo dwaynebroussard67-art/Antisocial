@@ -36,29 +36,20 @@ export default async function ArcadePage() {
 
   const viewer = await getViewer();
 
-  // Per docs/HANDOFF.md §2: "Pit: no games here at all." requireBlockAccess()
-  // is a floor check and would otherwise let a Pit-tier viewer cascade in —
-  // that's correct for doctrine/content pages but wrong here, so the Arcade
-  // is the one page that opts out of the normal cascade instead of relying
-  // on the generic tier-floor helper.
+  // NO TIER IS TURNED AWAY HERE (D's correction: "every level can see and
+  // participate down").
   //
-  // THE `!isAdmin` IS LOAD-BEARING — do not simplify it away. NavBar computes
-  // `canArcade = viewerTier !== "pit" || isAdmin`, so it SHOWS the Arcade link
-  // to admins even at Pit tier. Without the same exception here, an admin was
-  // offered a link that bounced them straight to /pit the moment they clicked
-  // it. That is exactly what D hit: seed-admin grants the ministry account
-  // admin AND Pit tier, so the one person who runs this place was the one
-  // person the Arcade refused.
+  // This page used to redirect Pit-tier viewers to /pit, reading HANDOFF.md
+  // §2's "Pit: no games here at all" as "Pit members may not play." That was
+  // the wrong reading. It means the Pit has no games OF ITS OWN — there are
+  // no Pit-tier variants — not that a Pit member is barred from the games
+  // below them. Participation cascades downward exactly like visibility.
   //
-  // Note the admin override in requireTierAccess() does NOT rescue this. It
-  // only lifts a tier that is BELOW the page's floor; "pit" already outranks
-  // "block", so nothing is lifted and `tier` stays "pit" all the way here.
-  //
-  // The nav and the page now answer the same question the same way. If the
-  // rule ever changes, change it in both or the link starts lying again.
-  if (tier === "pit" && !isAdmin) {
-    redirect("/pit");
-  }
+  // So the Arcade is no longer a special case that opts out of the cascade;
+  // requireBlockAccess() is the whole gate. getPlayableVariants() below
+  // already does the right thing for every tier: it takes the best build at
+  // or beneath the viewer's rank, so a Pit member is served the Crib builds
+  // rather than an empty page.
 
   return (
     <main>
