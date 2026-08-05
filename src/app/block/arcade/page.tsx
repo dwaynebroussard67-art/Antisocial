@@ -1,3 +1,4 @@
+import { HeroBoard } from "@/components/HeroBoard";
 import { redirect } from "next/navigation";
 import { requireBlockAccess, AccessDeniedError } from "@/lib/auth/roles";
 import { NavBar } from "@/components/NavBar";
@@ -55,15 +56,27 @@ export default async function ArcadePage() {
     <main>
       <NavBar viewerTier={tier} viewer={viewer} isAdmin={isAdmin} />
 
-      <section style={{ padding: "2rem", maxWidth: "720px" }}>
-        <p className="label" style={{ color: "var(--tier-block)" }}>ARCADE</p>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "2rem", marginTop: "0.5rem" }}>
-          Play something. Climb a board.
-        </h1>
-        <p style={{ color: "var(--text-secondary)", marginTop: "1rem", lineHeight: 1.6 }}>
-          You can challenge anyone at your tier or below — never above.
-          Tier is never bought or won through play.
-        </p>
+      <section style={{ padding: "2rem 2rem 0", maxWidth: "760px" }}>
+        <HeroBoard
+          kicker="Arcade"
+          headline="Play something. Climb a board."
+          body="Games are free, they're for everybody, and they cost you nothing but time. Winning does not move you up a tier and losing does not move you down — the ladder here is earned by showing up for people, never by scoring points."
+          steps={[
+            {
+              title: "Pick a game",
+              body: "Trivia, word scramble, reaction timer, coin flip. Start one and you're playing — no setup, no signup beyond being here.",
+            },
+            {
+              title: "Your score lands",
+              body: "Every score goes on the same board as everyone else's. No separate table for newcomers.",
+            },
+            {
+              title: "Challenge somebody",
+              body: "You can challenge anyone at your level or below — never above. Nobody upstairs gets disturbed by a game invite.",
+            },
+          ]}
+          note="Tier is never bought and never won through play. The games are for the joy of them."
+        />
       </section>
 
       <section style={{ padding: "0 2rem 3rem", maxWidth: "720px" }}>

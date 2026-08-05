@@ -1,3 +1,4 @@
+import { HeroBoard } from "@/components/HeroBoard";
 import { ensureAnonymousMember } from "@/lib/auth/anonymous-identity";
 import { getMemberTier } from "@/lib/auth/roles";
 import { getViewer } from "@/lib/auth/session";
@@ -76,6 +77,32 @@ export default async function AntisocialGate() {
           </p>
           <hr className="hairline" style={{ marginTop: "1.5rem" }} />
         </div>
+      </div>
+
+      {/* The stranger's first question is "what IS this and what do I do
+          here." Nothing above answers it — the hero sets tone, not
+          function. This does. */}
+      <div style={{ padding: "2.5rem 2rem 0", maxWidth: "760px" }}>
+        <HeroBoard
+          kicker="What this is"
+          headline="A place built for the people other places gave up on."
+          body="Antisocial is the community side of Misfit Ministries — somewhere to talk, play, work on something, and be known, without performing for an algorithm. You're already in. There is no application and nothing to prove at the door."
+          steps={[
+            {
+              title: "Look around the Street",
+              body: "No email, no account, no questions. Play the games, read what's here. Nobody is tracking you toward a sale.",
+            },
+            {
+              title: "Go deeper when you want",
+              body: "Give an email and the Block opens — the community feed, Signal messaging, more games. Whenever you're ready, not before.",
+            },
+            {
+              title: "The rest is earned, not bought",
+              body: "The deeper rooms are opened by a human who vouched for you, for time you gave. They can't be purchased or won by playing.",
+            },
+          ]}
+          note="We don't sell your email, we don't run ads, and nothing here is trying to keep you scrolling."
+        />
       </div>
 
       <div style={{ padding: "2.5rem 2rem", display: "flex", flexDirection: "column", gap: "1rem", maxWidth: "480px" }}>

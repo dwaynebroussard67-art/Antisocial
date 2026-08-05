@@ -1,3 +1,4 @@
+import { HeroBoard } from "@/components/HeroBoard";
 import { requireStreetAccess } from "@/lib/auth/roles";
 import { NavBar } from "@/components/NavBar";
 import { getViewer } from "@/lib/auth/session";
@@ -51,16 +52,27 @@ export default async function StreetArcadePage() {
     <main>
       <NavBar viewerTier={tier} viewer={viewer} isAdmin={isAdmin} />
 
-      <section style={{ padding: "2rem", maxWidth: "720px" }}>
-        <p className="label" style={{ color: "var(--tier-street)" }}>ARCADE</p>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "2rem", marginTop: "0.5rem" }}>
-          Everybody plays.
-        </h1>
-        <p style={{ color: "var(--text-secondary)", marginTop: "1rem", lineHeight: 1.6 }}>
-          You don't have to be anybody to pick up a game here. Scores land on
-          the same boards as everyone else's. You can challenge anyone at your
-          level — not above it.
-        </p>
+      <section style={{ padding: "2rem 2rem 0", maxWidth: "760px" }}>
+        <HeroBoard
+          kicker="Arcade"
+          headline="Everybody plays."
+          body="You don't have to be anybody to pick up a game here. No account, no email, no waiting to be let in. Scores land on the same boards as everyone else's — there is no beginners' table."
+          steps={[
+            {
+              title: "Just start",
+              body: "Pick a game below and play. Nothing to install, nothing to sign up for.",
+            },
+            {
+              title: "Your score counts",
+              body: "It goes on the real board next to everyone else's, from the first game you play.",
+            },
+            {
+              title: "Challenge anyone at your level",
+              body: "Or below it — never above. Nobody further in gets disturbed by an invite.",
+            },
+          ]}
+          note="Playing never moves you up a tier, and it never moves you down. Games are games here."
+        />
       </section>
 
       {playable.length === 0 ? (
