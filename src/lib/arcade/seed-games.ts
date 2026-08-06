@@ -18,6 +18,10 @@ const GAMES = [
   // see VARIANTS below. Registered here so the leaderboard/score routes
   // resolve; the builds themselves are content and ship separately.
   { key: "pac_man", name: "Pac-Man", kind: "solo_score" as const, scoreDirection: "higher_better" as const },
+  // The Gathered Light — cooperative, no score, no losing. Registered as
+  // multiplayer so nothing tries to rank it; scoreDirection is required by
+  // the column but carries no meaning for a game that never scores.
+  { key: "gathered_light", name: "The Gathered Light", kind: "multiplayer" as const, scoreDirection: "higher_better" as const },
 ];
 
 /**

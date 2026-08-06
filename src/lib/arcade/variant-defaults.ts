@@ -181,4 +181,52 @@ export const DEFAULT_VARIANTS: VariantDefinition[] = [
     // that enforcement has been verified against a real database.
     minAge: 18,
   },
+
+  // ==========================================================================
+  // THE GATHERED LIGHT — three skins of one cooperative game.
+  //
+  // Two people walk a shared path. Each controls only how close they stay to
+  // the other. Stay close and light gathers; drift and it dims. There is no
+  // failure state — only softer light — and no score of any kind.
+  //
+  // That makes it the truest game in this arcade to the doctrine already
+  // written here: tier is never bought or won through play. This one cannot
+  // be won at all. It ends the same way for everyone, and the only thing it
+  // measures is whether two people stayed near each other.
+  //
+  // kind is "multiplayer": it is not solo_score (there is no score) and not
+  // head_to_head (nobody is opposed). Leaderboard routes must never resolve
+  // for these keys — there is nothing to rank, by design.
+  //
+  // Source and assets: docs/incoming/gathered-light/
+  // Schema: run sql/gathered-light-schema-hardened.sql, NOT the file shipped
+  // inside the bundle — see that file's header for why.
+  // ==========================================================================
+  {
+    gameKey: "gathered_light",
+    kind: "multiplayer",
+    tier: "street",
+    variantKey: "gathered_light_street",
+    title: "The Gathered Light",
+    blurb: "An open path, quiet and plain. Walk it with somebody and the light between you grows.",
+    active: false,
+  },
+  {
+    gameKey: "gathered_light",
+    kind: "multiplayer",
+    tier: "block",
+    variantKey: "gathered_light_block",
+    title: "The Gathered Light",
+    blurb: "Close quarters and a dying fire's glow. Stay near and it comes back up.",
+    active: false,
+  },
+  {
+    gameKey: "gathered_light",
+    kind: "multiplayer",
+    tier: "crib",
+    variantKey: "gathered_light_crib",
+    title: "The Gathered Light",
+    blurb: "A painted forest, mythic and soft. The longest walk, for people who already know each other.",
+    active: false,
+  },
 ];
