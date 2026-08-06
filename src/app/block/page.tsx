@@ -1,3 +1,4 @@
+import { HeroBoard } from "@/components/HeroBoard";
 import { redirect } from "next/navigation";
 import { requireBlockAccess, AccessDeniedError } from "@/lib/auth/roles";
 import { NavBar } from "@/components/NavBar";
@@ -33,6 +34,35 @@ export default async function BlockPage() {
           style={{ objectFit: "cover", objectPosition: "center 30%" }}
         />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(10,9,8,0.1), rgba(10,9,8,0.95))" }} />
+      </section>
+
+      {/* GUIDED TOUR — Block. The one honest thing to say here is that the
+          next door is NOT something they can do; a human has to open it. */}
+      <section style={{ padding: "0 2rem", maxWidth: "760px" }}>
+        <HeroBoard
+          kicker="You are here — Block"
+          headline="This is where people start to actually know you."
+          body="You gave something real to reach you by, so more of the place is open: the community feed, Signal messaging, and the fuller builds of the games. This is where most Misfits stay, and that's not a lesser place to be."
+          steps={[
+            {
+              title: "Talk to somebody",
+              body: "Signal is consent-first — nobody reaches you without knocking, and you can say no with no explanation owed.",
+            },
+            {
+              title: "Post on the feed",
+              body: "No likes to chase and no follower counts. Say the real thing, anonymously if you'd rather.",
+            },
+            {
+              title: "Play the fuller builds",
+              body: "Same games as the Street, deeper versions. Winning still never moves you up a tier.",
+            },
+          ]}
+          ctaLabel="Open Signal"
+          ctaHref="/signal"
+          secondaryLabel="Open the Arcade"
+          secondaryHref="/block/arcade"
+          note="The Crib is the next floor, and you can't reach it by playing more or posting more. A minister or admin opens it for someone who gave real time. That's on purpose — it can't be bought or farmed."
+        />
       </section>
 
       <section style={{ padding: "2rem", maxWidth: "720px" }}>

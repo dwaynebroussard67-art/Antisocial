@@ -1,3 +1,4 @@
+import { HeroBoard } from "@/components/HeroBoard";
 import { requireStreetAccess } from "@/lib/auth/roles";
 import { NavBar } from "@/components/NavBar";
 import { getViewer } from "@/lib/auth/session";
@@ -30,6 +31,35 @@ export default async function StreetPage() {
           version you were handed. Nura's watching over this whole site,
           including right here.
         </p>
+      </section>
+
+      {/* GUIDED TOUR — Street. Tells a newcomer what is actually reachable
+          from here and, honestly, how the next door opens. */}
+      <section style={{ padding: "0 2rem", maxWidth: "760px" }}>
+        <HeroBoard
+          kicker="You are here — Street"
+          headline="Everything on this floor is open right now."
+          body="No email, no account, nothing to prove. You can play, read, and look around as long as you want. Nobody will chase you, and nothing here is trying to keep you scrolling."
+          steps={[
+            {
+              title: "Play something",
+              body: "The Arcade is open to you with no account. Your scores go on the same boards as everyone else's.",
+            },
+            {
+              title: "Read what we actually teach",
+              body: "The dark-skinned, Ethiopian Christ of the Tewahedo canon — taught plainly, not the version you were handed.",
+            },
+            {
+              title: "Go further when you want to",
+              body: "Giving an email opens the Block: the community feed, Signal messaging, better games. That is the only step you take yourself.",
+            },
+          ]}
+          ctaLabel="Open the Arcade"
+          ctaHref="/street/arcade"
+          secondaryLabel="Give an email, open the Block"
+          secondaryHref="/sign-in?mode=signup"
+          note="Nura watches this whole site, including here — for hate and threats, not for what you confess."
+        />
       </section>
 
       <section style={{ position: "relative", height: "50vh", margin: "2rem 0" }}>

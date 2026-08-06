@@ -1,3 +1,4 @@
+import { HeroBoard } from "@/components/HeroBoard";
 import { redirect } from "next/navigation";
 import { requireCribAccess, AccessDeniedError } from "@/lib/auth/roles";
 import { NavBar } from "@/components/NavBar";
@@ -33,6 +34,33 @@ export default async function CribPage() {
           style={{ objectFit: "cover", objectPosition: "center 25%" }}
         />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(10,9,8,0.1), rgba(10,9,8,0.95))" }} />
+      </section>
+
+      {/* GUIDED TOUR — Crib. Someone here was let in by a human, so the
+          board names the responsibility rather than selling the tier. */}
+      <section style={{ padding: "0 2rem", maxWidth: "760px" }}>
+        <HeroBoard
+          kicker="You are here — the Crib"
+          headline="Somebody vouched for you."
+          body="A minister or admin opened this door because of time you actually gave. That's the only way in — it isn't sold and it can't be farmed through a game. What's here is the working part of the ministry, not a reward."
+          steps={[
+            {
+              title: "You can reach everyone below",
+              body: "The Block and the Street are both open to you, and you can talk to anyone on them. Nobody upstairs gets disturbed.",
+            },
+            {
+              title: "Help shape it",
+              body: "This is where accountability holds and where the ministry actually gets shaped, not just discussed.",
+            },
+            {
+              title: "The Pit is not a promotion",
+              body: "It's a duty roster. People who agreed to be woken at 2am to try to save a life. It's asked for, not awarded.",
+            },
+          ]}
+          ctaLabel="Open Signal"
+          ctaHref="/signal"
+          note="Whoever vouched for you is recorded. That's not surveillance — it's so a grant always traces back to a person who meant it."
+        />
       </section>
 
       <section style={{ padding: "2rem", maxWidth: "720px" }}>
