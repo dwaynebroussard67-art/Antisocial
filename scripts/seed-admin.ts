@@ -22,14 +22,21 @@
 // is not what "remove admin credentials" means.
 //
 // Safe to re-run. Prints every change it makes.
-import { db } from "../src/lib/db";
-import { members } from "../src/lib/db/schema/members";
-import { memberRoles } from "../src/lib/db/schema/member-roles";
-import { eq, ne, and, inArray } from "drizzle-orm";
+// Only static import: see the hoisting note in seed.ts. Everything that
+// reaches lib/db is imported dynamically inside main(), after the
+// connection string is in place.
+import { requireDatabaseUrl } from "./load-env";
 
 const ADMIN_EMAIL = "misfitministries2026@gmail.com";
 
 async function main() {
+  requireDatabaseUrl();
+
+  const { db } = await import("../src/lib/db");
+  const { members } = await import("../src/lib/db/schema/members");
+  const { memberRoles } = await import("../src/lib/db/schema/member-roles");
+  const { eq, ne, and, inArray } = await import("drizzle-orm");
+
   let [member] = await db.select().from(members).where(eq(members.email, ADMIN_EMAIL)).limit(1);
 
   if (!member) {
